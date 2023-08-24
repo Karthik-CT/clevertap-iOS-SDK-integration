@@ -7,8 +7,9 @@
 #import "CTInboxBaseMessageCell.h"
 #import "CTCarouselMessageCell.h"
 
-#import "CTUIUtils.h"
+#import "CTInAppResources.h"
 #import "CTConstants.h"
+#import "CTInAppUtils.h"
 #import "CTInboxUtils.h"
 #import "UIView+CTToast.h"
 
@@ -24,7 +25,7 @@ NSString * const kCellCarouselMessageIdentifier = @"CTCarouselMessageCell";
 NSString * const kCellCarouselImgMessageIdentifier = @"CTCarouselImageMessageCell";
 NSString * const kCellIconMessageIdentifier = @"CTInboxIconMessageCell";
 
-NSString * const kDefaultTab = @"All";
+NSString * const kDefaultTag = @"All";
 static const float kCellSpacing = 6;
 static const int kMaxTags = 3;
 
@@ -60,7 +61,7 @@ static const int kMaxTags = 3;
                           config:(CleverTapInboxStyleConfig *)config
                         delegate:(id<CleverTapInboxViewControllerDelegate>)delegate
                analyticsDelegate:(id<CleverTapInboxViewControllerAnalyticsDelegate>)analyticsDelegate {
-    self = [self initWithNibName:NSStringFromClass([CleverTapInboxViewController class]) bundle:[CTInboxUtils bundle: CleverTapInboxViewController.class]];
+    self = [self initWithNibName:NSStringFromClass([CleverTapInboxViewController class]) bundle:[NSBundle bundleForClass:CleverTapInboxViewController.class]];
     if (self) {
         _config = [config copy];
         _delegate = delegate;
@@ -69,11 +70,8 @@ static const int kMaxTags = 3;
         _filterMessages = _messages;
         
         NSMutableArray *tags = _config.messageTags.count > 0 ?  [NSMutableArray arrayWithArray:_config.messageTags] : [NSMutableArray new];
-        
         if ([tags count] > 0) {
-            // Use the first tab title if specified in the config, or else fallback to the Default one
-            NSString *firstTabTitle = (config.firstTabTitle && config.firstTabTitle.length > 0) ? config.firstTabTitle : kDefaultTab;
-            [tags insertObject:firstTabTitle atIndex:0];
+            [tags insertObject:kDefaultTag atIndex:0];
             _topContentOffset = 33.f;
         }
         if ([tags count] > kMaxTags) {
@@ -151,16 +149,18 @@ static const int kMaxTags = 3;
 
 - (void)setUpInboxLayout {
     
-    UIColor *color = [CTUIUtils ct_colorWithHexString:@"#EAEAEA"];
+    UIColor *color = [CTInAppUtils ct_colorWithHexString:@"#EAEAEA"];
+    
     self.view.backgroundColor = (_config && _config.backgroundColor) ? _config.backgroundColor : color;
     self.tableView.backgroundColor = (_config && _config.backgroundColor) ? _config.backgroundColor : color;
     
-    // Update Background and Bar Tint Color of Navigation Bar
-    self.navigationController.view.backgroundColor = (_config && _config.navigationBarTintColor) ? _config.navigationBarTintColor : [UIColor whiteColor];
+    self.navigationController.view.backgroundColor = (_config && _config.backgroundColor) ? _config.backgroundColor : color;
     self.navigationController.navigationBar.barTintColor = (_config && _config.navigationBarTintColor) ? _config.navigationBarTintColor : [UIColor whiteColor];
-    // Update Tint and Title Color of Navigation Bar
     self.navigationController.navigationBar.tintColor = (_config && _config.navigationTintColor) ? _config.navigationTintColor : [UIColor blackColor];
-    self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName : (_config && _config.navigationTintColor) ? _config.navigationTintColor : [UIColor blackColor]};
+    
+    if (_config && _config.navigationTintColor) {
+        self.navigationController.navigationBar.titleTextAttributes = @{NSForegroundColorAttributeName : _config.navigationTintColor};
+    }
     
     [self setUpTableViewLayout];
     [self calculateTableViewVisibleFrame];
@@ -173,7 +173,7 @@ static const int kMaxTags = 3;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectMake(0.0f, 0.0f, self.tableView.bounds.size.width, 1.0)];
     self.automaticallyAdjustsScrollViewInsets = NO;
     self.edgesForExtendedLayout = UIRectEdgeNone;
-    self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    self.tableView.separatorStyle = UITableViewCellSelectionStyleNone;
 }
 
 - (void)updateInboxLayout {
@@ -185,21 +185,13 @@ static const int kMaxTags = 3;
 }
 
 - (void)registerNibs {
-    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils getXibNameForControllerName:NSStringFromClass([CTInboxSimpleMessageCell class])]
-                                               bundle:[CTInboxUtils bundle: CTInboxSimpleMessageCell.class]]
-         forCellReuseIdentifier:kCellSimpleMessageIdentifier];
-    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils getXibNameForControllerName:NSStringFromClass([CTCarouselMessageCell class])]
-                                               bundle:[CTInboxUtils bundle: CTCarouselMessageCell.class]]
-         forCellReuseIdentifier:kCellCarouselMessageIdentifier];
-    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils getXibNameForControllerName:NSStringFromClass([CTCarouselImageMessageCell class])]
-                                               bundle:[CTInboxUtils bundle: CTCarouselImageMessageCell.class]]
-         forCellReuseIdentifier:kCellCarouselImgMessageIdentifier];
-    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils getXibNameForControllerName:NSStringFromClass([CTInboxIconMessageCell class])]
-                                               bundle:[CTInboxUtils bundle: CTInboxIconMessageCell.class]]
-         forCellReuseIdentifier:kCellIconMessageIdentifier];
+    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils XibNameForControllerName:NSStringFromClass([CTInboxSimpleMessageCell class])] bundle:[NSBundle bundleForClass:CTInboxSimpleMessageCell.class]] forCellReuseIdentifier:kCellSimpleMessageIdentifier];
+    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils XibNameForControllerName:NSStringFromClass([CTCarouselMessageCell class])] bundle:[NSBundle bundleForClass:CTCarouselMessageCell.class]] forCellReuseIdentifier:kCellCarouselMessageIdentifier];
+    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils XibNameForControllerName:NSStringFromClass([CTCarouselImageMessageCell class])] bundle:[NSBundle bundleForClass:CTCarouselImageMessageCell.class]] forCellReuseIdentifier:kCellCarouselImgMessageIdentifier];
+    [self.tableView registerNib:[UINib nibWithNibName:[CTInboxUtils XibNameForControllerName:NSStringFromClass([CTInboxIconMessageCell class])] bundle:[NSBundle bundleForClass:CTInboxIconMessageCell.class]] forCellReuseIdentifier:kCellIconMessageIdentifier];
 }
 
-- (NSString *)getTitle {
+- (NSString*)getTitle {
     return self.config.title ? self.config.title : @"Notifications";
 }
 
@@ -221,7 +213,8 @@ static const int kMaxTags = 3;
 
 - (void)calculateTableViewVisibleFrame {
     CGRect frame = self.tableView.frame;
-    BOOL landscape = [CTUIUtils isDeviceOrientationLandscape];
+    UIInterfaceOrientation orientation = [[CTInAppResources getSharedApplication] statusBarOrientation];
+    BOOL landscape = (orientation == UIInterfaceOrientationLandscapeLeft || orientation == UIInterfaceOrientationLandscapeRight);
     if (landscape) {
         frame.origin.y += self.topContentOffset;
         frame.size.height -= self.topContentOffset;
@@ -247,18 +240,22 @@ static const int kMaxTags = 3;
                          action:@selector(segmentSelected:)
                forControlEvents:UIControlEventValueChanged];
     
-    /// Update the Segment Control Tint Color
-    if (@available(iOS 13.0, *)) {
-        segmentedControl.selectedSegmentTintColor = (_config && _config.tabSelectedBgColor) ? _config.tabSelectedBgColor : [UIColor whiteColor];
-    } else {
-        segmentedControl.tintColor = (_config && _config.tabSelectedBgColor) ? _config.tabSelectedBgColor : [UIColor whiteColor];
+    if (_config) {
+        if (_config.tabSelectedBgColor) {
+            if (@available(iOS 13.0, *)) {
+                segmentedControl.selectedSegmentTintColor = _config.tabSelectedBgColor;
+            } else {
+                segmentedControl.tintColor = _config.tabSelectedBgColor;
+            }
+        }
+        if (_config.tabSelectedBgColor) {
+            [segmentedControl setTitleTextAttributes:@{NSForegroundColorAttributeName : _config.tabSelectedTextColor} forState:UIControlStateSelected];
+        }
+        if (_config.tabUnSelectedTextColor) {
+            [segmentedControl setTitleTextAttributes:@{NSForegroundColorAttributeName : _config.tabUnSelectedTextColor} forState:UIControlStateNormal];
+        }
     }
     
-    /// Update the Segment Control Tab Selected Color
-    [segmentedControl setTitleTextAttributes:@{NSForegroundColorAttributeName :(_config && _config.tabSelectedTextColor) ? _config.tabSelectedTextColor : [UIColor blackColor]} forState:UIControlStateSelected];
-    /// Update the Segment Control Tab UnSelected Color
-    [segmentedControl setTitleTextAttributes:@{NSForegroundColorAttributeName :(_config && _config.tabUnSelectedTextColor) ? _config.tabUnSelectedTextColor : [UIColor blackColor]} forState:UIControlStateNormal];
-    /// Add Segment Control
     [self.segmentedControlContainer addSubview:segmentedControl];
     [self.tableView setContentInset:UIEdgeInsetsMake(_topContentOffset, 0, 0, 0)];
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -528,7 +525,7 @@ static const int kMaxTags = 3;
     CGFloat topOffset = 1;
     CGFloat bottomOffset = 2;
     CGFloat cellHeight =  cell.bounds.size.height;
-    CGFloat multiplier = [CTUIUtils isUserInterfaceIdiomPad] ? 1.5 : 1;
+    CGFloat multiplier = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 1.5 : 1;
     
     switch (cell.mediaPlayerCellType) {
         case CTMediaPlayerCellTypeTopLandscape:

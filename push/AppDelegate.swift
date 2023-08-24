@@ -11,14 +11,37 @@ import CleverTapSDK
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, CleverTapPushNotificationDelegate {
     
+    let center  = UNUserNotificationCenter.current()
+    
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        //        CleverTap.autoIntegrate()
+        //                CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
         
         registerForPush()
         
+        //        // register category with actions
+        //        let action1 = UNNotificationAction(identifier: "action_1", title: "Back", options: [])
+        //        let action2 = UNNotificationAction(identifier: "action_2", title: "Next", options: [])
+        //        let action3 = UNNotificationAction(identifier: "action_3", title: "View In App", options: [])
+        //        let category = UNNotificationCategory(identifier: "CTNotification", actions: [action1, action2, action3], intentIdentifiers: [], options: [])
+        //        UNUserNotificationCenter.current().setNotificationCategories([category])
+        
+//        let profile: Dictionary<String, Any> = [
+//            "Identity": "t2",
+//            "Email": "t2@test.com",
+//            "email": "t1@test.com"
+//        ]
+//        CleverTap.sharedInstance()?.onUserLogin(profile)
+        CleverTap.sharedInstance()?.enableDeviceNetworkInfoReporting(true)
+        
+        UNUserNotificationCenter.current().delegate = self
+        
+        return true
+    }
+    
+    func registerForPush() {
         // register category with actions
         let action1 = UNNotificationAction(identifier: "action_1", title: "Back", options: [])
         let action2 = UNNotificationAction(identifier: "action_2", title: "Next", options: [])
@@ -26,15 +49,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let category = UNNotificationCategory(identifier: "CTNotification", actions: [action1, action2, action3], intentIdentifiers: [], options: [])
         UNUserNotificationCenter.current().setNotificationCategories([category])
         
-//        let profile: Dictionary<String, Any> = [
-//            "Identity": "Karthik",
-//            "Email": "karthik.iyer@clevertap.com",]
-//        CleverTap.sharedInstance()?.onUserLogin(profile)
-        
-        return true
-    }
-    
-    func registerForPush() {
         // Register for Push notifications
         UNUserNotificationCenter.current().delegate = self
         // request Permissions
@@ -79,12 +93,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     }
     
     //Manually Enable Support for Universal (Deep) Link Tracking
-    func shouldHandleCleverTap(_ url: URL?, for channel: CleverTapChannel) -> Bool {
-        if let newUrl = url {
-            UIApplication.shared.open(newUrl)
-        }
-        return false
-    }
+//    func shouldHandleCleverTap(_ url: URL?, for channel: CleverTapChannel) -> Bool {
+//        if let newUrl = url {
+//            UIApplication.shared.open(newUrl)
+//        }
+//        return false
+//    }
     
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],

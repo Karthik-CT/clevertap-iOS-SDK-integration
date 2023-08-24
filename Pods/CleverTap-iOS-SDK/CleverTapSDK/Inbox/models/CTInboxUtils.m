@@ -1,7 +1,6 @@
-
 #import "CTInboxUtils.h"
 #if !CLEVERTAP_NO_INBOX_SUPPORT
-#import "CTUIUtils.h"
+#import "CTInAppResources.h"
 #endif
 
 static NSDictionary *_inboxMessageTypeMap;
@@ -25,26 +24,19 @@ static NSDictionary *_inboxMessageTypeMap;
     return [_type integerValue];
 }
 
-+ (NSString *)getXibNameForControllerName:(NSString *)controllerName {
++ (NSString *)XibNameForControllerName:(NSString *)controllerName {
 #if CLEVERTAP_NO_INBOX_SUPPORT
     return nil;
 #else
     NSMutableString *xib = [NSMutableString stringWithString:controllerName];
-    BOOL landscape = [CTUIUtils isDeviceOrientationLandscape];
+    UIApplication *sharedApplication = [CTInAppResources getSharedApplication];
+    BOOL landscape = UIInterfaceOrientationIsLandscape(sharedApplication.statusBarOrientation);
     if (landscape) {
         [xib appendString:@"~land"];
     } else {
         [xib appendString:@"~port"];
     }
     return xib;
-#endif
-}
-
-+ (NSBundle *)bundle:(Class)bundleClass  {
-#if CLEVERTAP_NO_INBOX_SUPPORT
-    return nil;
-#else
-    return [CTUIUtils bundle];
 #endif
 }
 

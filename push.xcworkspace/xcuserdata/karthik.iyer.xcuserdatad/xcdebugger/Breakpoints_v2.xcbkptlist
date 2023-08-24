@@ -1,22 +1,86 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Bucket
-   uuid = "6C61A24C-3060-4DE3-9146-F2269AB0A6E3"
+   uuid = "AA9EF991-AEFC-4CD8-8CA5-F07C2B225E81"
    type = "0"
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "6E64E039-24EC-44EC-A37B-CFD45AD9C6B6"
-            shouldBeEnabled = "No"
+            uuid = "61EAAB83-12D0-4FF7-A5AE-F51FC01A51AD"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "push/AppDelegate.swift"
+            filePath = "Pods/CleverTap-iOS-SDK/CleverTapSDK/CleverTap.m"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "52"
-            endingLineNumber = "52"
-            landmarkName = "application(_:didFailToRegisterForRemoteNotificationsWithError:)"
+            startingLineNumber = "1568"
+            endingLineNumber = "1568"
+            landmarkName = "-_checkAndFireDeepLinkForNotification:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "0488FB8C-AC00-4363-B9EA-0A47069AA076"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Pods/CleverTap-iOS-SDK/CleverTapSDK/CleverTap.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1459"
+            endingLineNumber = "1459"
+            landmarkName = "-_handlePushNotification:openDeepLinksInForeground:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "C1AD7784-36E4-4966-88A6-5F22AEFD5378"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Pods/CleverTap-iOS-SDK/CleverTapSDK/CleverTap.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1950"
+            endingLineNumber = "1950"
+            landmarkName = "-openURL:forModule:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "310AFE39-615F-4A2C-ACB2-25CF636B0008"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Pods/CleverTap-iOS-SDK/CleverTapSDK/CleverTap.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1955"
+            endingLineNumber = "1955"
+            landmarkName = "-openURL:forModule:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "AF5BCA78-08F2-4434-A7A7-4AF1C87AA47F"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Pods/CleverTap-iOS-SDK/CleverTapSDK/CleverTap.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1943"
+            endingLineNumber = "1943"
+            landmarkName = "-handleNotificationCTA:buttonCustomExtras:forNotification:fromViewController:withExtras:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

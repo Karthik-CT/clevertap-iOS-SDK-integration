@@ -4,7 +4,6 @@
 #import "CTConstants.h"
 #import "CTUserMO.h"
 #import "CTMessageMO.h"
-#import "CTInboxUtils.h"
 
 static NSManagedObjectContext *mainContext;
 static NSManagedObjectContext *privateContext;
@@ -50,7 +49,7 @@ static NSManagedObjectContext *privateContext;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         @try {
-            NSURL *modelURL = [[CTInboxUtils bundle:self.class] URLForResource:@"Inbox" withExtension:@"momd"];
+            NSURL *modelURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"Inbox" withExtension:@"momd"];
             NSManagedObjectModel *mom = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
             NSPersistentStoreCoordinator *coordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
             
@@ -120,12 +119,12 @@ static NSManagedObjectContext *privateContext;
     return [msg toJSON];
 }
 
-- (NSInteger)count {
+- (NSUInteger)count {
     if (!self.isInitialized) return -1;
     return [self.messages count];
 }
 
-- (NSInteger)unreadCount {
+- (NSUInteger)unreadCount {
     if (!self.isInitialized) return -1;
     return [self.unreadMessages count];
 }
@@ -135,8 +134,7 @@ static NSManagedObjectContext *privateContext;
     NSTimeInterval now = (int)[[NSDate date] timeIntervalSince1970];
     NSMutableArray *messages = [NSMutableArray new];
     NSMutableArray *toDelete = [NSMutableArray new];
-    NSOrderedSet *userMessages = [[NSOrderedSet alloc] initWithOrderedSet:self.user.messages];
-    for (CTMessageMO *msg in userMessages) {
+    for (CTMessageMO *msg in self.user.messages) {
         int ttl = (int)msg.expires;
         if (ttl > 0 && now >= ttl) {
             CleverTapLogStaticInternal(@"%@: message expires: %@, deleting", self, msg);
@@ -159,8 +157,7 @@ static NSManagedObjectContext *privateContext;
     NSTimeInterval now = (int)[[NSDate date] timeIntervalSince1970];
     NSMutableArray *messages = [NSMutableArray new];
     NSMutableArray *toDelete = [NSMutableArray new];
-    NSOrderedSet *userMessages = [[NSOrderedSet alloc] initWithOrderedSet:self.user.messages];
-    NSOrderedSet *results = [userMessages filteredOrderedSetUsingPredicate:[NSPredicate predicateWithFormat:@"isRead == NO"]];
+    NSOrderedSet *results = [self.user.messages filteredOrderedSetUsingPredicate:[NSPredicate predicateWithFormat:@"isRead == NO"]];
     for (CTMessageMO *msg in results) {
         int ttl = (int)msg.expires;
         if (ttl > 0 && now >= ttl) {
@@ -184,8 +181,7 @@ static NSManagedObjectContext *privateContext;
 
 - (CTMessageMO *)_messageForId:(NSString *)messageId {
     if (!self.isInitialized) return nil;
-    NSOrderedSet *userMessages = [[NSOrderedSet alloc] initWithOrderedSet:self.user.messages];
-    NSOrderedSet *results = [userMessages filteredOrderedSetUsingPredicate:[NSPredicate predicateWithFormat:@"id == %@", messageId]];
+    NSOrderedSet *results = [self.user.messages filteredOrderedSetUsingPredicate:[NSPredicate predicateWithFormat:@"id == %@", messageId]];
     BOOL existing = results && [results count] > 0;
     return existing ? results[0] : nil;
 }

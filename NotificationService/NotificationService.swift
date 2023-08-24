@@ -16,15 +16,37 @@ class NotificationService: CTNotificationServiceExtension {
     
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
-        CleverTap.sharedInstance()?.recordEvent("NotificationServiceEventForPushImpression")
-        let profile: Dictionary<String, Any> = [
-            "Identity": "Karthik",
-            "Email": "karthik.iyer@clevertap.com",]
-        CleverTap.sharedInstance()?.onUserLogin(profile)
+        
+        let defaults = UserDefaults.init(suiteName: "group.clevertapTest")
+        let emailId = defaults?.value(forKey: "userEmailID") as? String
+        let userId = defaults?.value(forKey: "userIdentity")
+        let userMobNo = defaults?.value(forKey: "userMobileNumber")
+        print("From Notification Service EmailID: \(String(describing: emailId))")
+        
+        let props = [
+            "emailId": emailId,
+            "userId": userId,
+            "userMobNo": userMobNo
+        ]
+        
+        CleverTap.sharedInstance()?.recordEvent("NotificationServiceEventForPushImpression", withProps: props)
+        
+        if let emailId = emailId, let userId = userId, let userMobNo = userMobNo {
+            let profile: Dictionary<String, Any> = [
+                "Identity": userId,
+                "Email": emailId,
+                "Phone": userMobNo
+            ]
+            CleverTap.sharedInstance()?.onUserLogin(profile)
+        }
+        
+        //        let profile: Dictionary<String, Any> = [
+        //            "Identity": "ioskk2",
+        //            "Email": "ioskk2@test.com",]
+        //        CleverTap.sharedInstance()?.onUserLogin(profile)
         // call to record the Notification viewed
         CleverTap.sharedInstance()?.recordNotificationViewedEvent(withData:request.content.userInfo)
         super.didReceive(request, withContentHandler: contentHandler)
-
     }
     
     override func serviceExtensionTimeWillExpire() {

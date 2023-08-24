@@ -3,7 +3,6 @@
 #import "CTInAppDisplayViewControllerPrivate.h"
 #import "CTImageInAppViewControllerPrivate.h"
 #import "CTDismissButton.h"
-#import "CTUIUtils.h"
 
 static const CGFloat kTabletSpacingConstant = 40.f;
 static const CGFloat kSpacingConstant = 160.f;
@@ -37,7 +36,7 @@ static const CGFloat kSpacingConstant = 160.f;
 - (void)layoutNotification {
     
     // UIView container which holds all other subviews
-    self.containerView.backgroundColor = [CTUIUtils ct_colorWithHexString:self.notification.backgroundColor];
+    self.containerView.backgroundColor = [CTInAppUtils ct_colorWithHexString:self.notification.backgroundColor];
     self.closeButton.hidden = !self.notification.showCloseButton;
     
     switch (self.notification.inAppType) {
@@ -57,7 +56,7 @@ static const CGFloat kSpacingConstant = 160.f;
 }
 
 - (void)handleLayoutForIdiomPad {
-    if ([CTUIUtils isUserInterfaceIdiomPad]) {
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
         [self.containerView setTranslatesAutoresizingMaskIntoConstraints:NO];
         if (self.notification.tablet) {
             if (![self deviceOrientationIsLandscape]) {

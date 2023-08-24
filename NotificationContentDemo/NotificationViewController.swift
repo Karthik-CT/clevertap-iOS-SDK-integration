@@ -17,10 +17,10 @@ class NotificationViewController: CTNotificationViewController {
         // Do any required interface initialization here.
     }
 
-    func didReceive(_ notification: UNNotification) {
-        self.label?.text = notification.request.content.body
-
-    }
+//    func didReceive(_ notification: UNNotification) {
+//        self.label?.text = notification.request.content.body
+//
+//    }
 
     override func userDidPerformAction(_ action: String, withProperties properties: [AnyHashable : Any]!) {
         print("userDidPerformAction \(action) with props \(String(describing: properties))")

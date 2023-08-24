@@ -8,7 +8,7 @@
 import UIKit
 import CleverTapSDK
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBOutlet weak var txtName: UITextField!
     
@@ -18,10 +18,15 @@ class ViewController: UIViewController {
     
     @IBOutlet weak var txtMobileNumber: UITextField!
     
+    let center  = UNUserNotificationCenter.current()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
+//        let appvar = UIApplication.shared.delegate as! AppDelegate
+//        AppDelegate.shared.registerForRemoteNotifications()
+//        UIApplication.shared.registerForRemoteNotifications()
         
         txtName.delegate = self
         txtEmail.delegate = self
@@ -35,7 +40,7 @@ class ViewController: UIViewController {
             "Name": txtName.text!,
             "Identity": txtIdentity.text!,
             "Email": txtEmail.text!,
-            "Phone": txtMobileNumber.text!,
+            "Phone": "+91"+txtMobileNumber.text!,
             "MSG-email": true,
             "MSG-push": true,
             "MSG-sms": true,
@@ -43,7 +48,33 @@ class ViewController: UIViewController {
         ]
         CleverTap.sharedInstance()?.onUserLogin(profile)
         
+        let defaults = UserDefaults(suiteName: "group.clevertapTest")
+        defaults!.set(txtEmail.text!, forKey: "userEmailID")
+        defaults!.set(txtIdentity.text!, forKey: "userIdentity")
+        defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
+        
         self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
+        
+        let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
+        self.navigationController!.pushViewController(vc, animated: true)
+    }
+    
+    
+    @IBAction func pushProfileBtn(_ sender: UIButton) {
+        let profile: Dictionary<String, Any> = [
+            "Name": txtName.text!,
+            "Identity": txtIdentity.text!,
+            "Email": txtEmail.text!,
+            "Phone": txtMobileNumber.text!,
+            "MSG-email": true,
+            "MSG-push": true,
+            "MSG-sms": true,
+            "MSG-whatsapp": true
+        ]
+        CleverTap.sharedInstance()?.profilePush(profile)
+        
+        self.showToast(message: "Push Profile Clicked!", font: .systemFont(ofSize: 12.0))
         
         let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
         let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController

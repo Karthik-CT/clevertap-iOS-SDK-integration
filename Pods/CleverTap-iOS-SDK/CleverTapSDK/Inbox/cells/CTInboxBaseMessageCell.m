@@ -95,7 +95,7 @@ static NSString * const kOrientationPortrait = @"p";
 - (void)configureForMessage:(CleverTapInboxMessage *)message {
     self.message = message;
     if (message.backgroundColor && ![message.backgroundColor isEqual:@""]) {
-        self.containerView.backgroundColor = [CTUIUtils ct_colorWithHexString:message.backgroundColor];
+        self.containerView.backgroundColor = [CTInAppUtils ct_colorWithHexString:message.backgroundColor];
     } else {
         self.containerView.backgroundColor = [UIColor whiteColor];
     }
@@ -149,14 +149,16 @@ static NSString * const kOrientationPortrait = @"p";
 
 - (UIImage *)getPortraitPlaceHolderImage {
     if (portraitPlaceholderImage == nil) {
-        portraitPlaceholderImage = [CTUIUtils getImageForName:@"ct_default_portrait_image.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        portraitPlaceholderImage = [UIImage imageNamed:@"ct_default_portrait_image.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return portraitPlaceholderImage;
 }
 
 - (UIImage *)getLandscapePlaceHolderImage {
     if (landscapePlaceholderImage == nil) {
-        landscapePlaceholderImage = [CTUIUtils getImageForName:@"ct_default_landscape_image.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        landscapePlaceholderImage = [UIImage imageNamed:@"ct_default_landscape_image.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return landscapePlaceholderImage;
 }
@@ -171,7 +173,8 @@ static NSString * const kOrientationPortrait = @"p";
 }
 
 - (BOOL)deviceOrientationIsLandscape {
-    return [CTUIUtils isDeviceOrientationLandscape];
+    UIApplication *sharedApplication = [CTInAppResources getSharedApplication];
+    return UIInterfaceOrientationIsLandscape(sharedApplication.statusBarOrientation);
 }
 
 
@@ -179,42 +182,48 @@ static NSString * const kOrientationPortrait = @"p";
 
 - (UIImage*)getAudioPlaceholderImage {
     if (audioPlaceholderImage == nil) {
-        audioPlaceholderImage = [CTUIUtils getImageForName:@"ct_default_audio.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        audioPlaceholderImage = [UIImage imageNamed:@"sound-wave-headphones.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return audioPlaceholderImage;
 }
 
 - (UIImage *)getVideoPlaceHolderImage {
     if (videoPlaceholderImage == nil) {
-        videoPlaceholderImage = [CTUIUtils getImageForName:@"ct_default_video.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        videoPlaceholderImage = [UIImage imageNamed:@"ct_default_video.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return videoPlaceholderImage;
 }
 
 - (UIImage*)getPlayImage {
     if (playImage == nil) {
-        playImage = [CTUIUtils getImageForName:@"ic_play.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        playImage = [UIImage imageNamed:@"ic_play.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return playImage;
 }
 
 - (UIImage*)getPauseImage {
     if (pauseImage == nil) {
-        pauseImage = [CTUIUtils getImageForName:@"ic_pause.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        pauseImage = [UIImage imageNamed:@"ic_pause.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return pauseImage;
 }
 
 - (UIImage*)getVolumeOnImage {
     if (volumeOnImage == nil) {
-        volumeOnImage = [CTUIUtils getImageForName:@"ct_volume_on.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        volumeOnImage = [UIImage imageNamed:@"volume_on.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return volumeOnImage;
 }
 
 - (UIImage*)getVolumeOffImage {
     if (volumeOffImage == nil) {
-        volumeOffImage = [CTUIUtils getImageForName:@"ct_volume_off.png"];
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        volumeOffImage = [UIImage imageNamed:@"volume_off.png" inBundle:bundle compatibleWithTraitCollection:nil];
     }
     return volumeOffImage;
 }
@@ -404,7 +413,7 @@ static NSString * const kOrientationPortrait = @"p";
     id object = [notification object];
     if (object && [object isKindOfClass:[AVPlayerItem class]]) {
         AVPlayerItem *item = (AVPlayerItem*)[notification object];
-        [item seekToTime:kCMTimeZero completionHandler:nil];
+        [item seekToTime:kCMTimeZero];
     }
     [self pause];
     [self showControls:YES];

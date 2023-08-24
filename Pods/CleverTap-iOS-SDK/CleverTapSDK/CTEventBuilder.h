@@ -1,5 +1,4 @@
 #import <Foundation/Foundation.h>
-#import "CleverTap.h"
 
 @class CTValidationResult;
 @class CTInAppNotification;
@@ -37,9 +36,5 @@
 + (void)buildGeofenceStateEvent:(BOOL)entered
                  forGeofenceDetails:(NSDictionary * _Nonnull)geofenceDetails
               completionHandler:(void(^ _Nonnull)(NSDictionary * _Nullable event, NSArray<CTValidationResult*> * _Nullable errors))completion;
-
-+ (void)buildDirectCallEvent:(int)eventRawValue
-              forCallDetails:(NSDictionary * _Nonnull)callDetails
-           completionHandler:(void(^ _Nonnull)(NSDictionary * _Nullable event, NSArray<CTValidationResult*> * _Nullable errors))completion;
 
 @end

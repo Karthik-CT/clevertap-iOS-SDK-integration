@@ -1,6 +1,5 @@
-
 #import "CTInboxMessageActionView.h"
-#import "CTUIUtils.h"
+#import "CTInAppUtils.h"
 
 @implementation CTInboxMessageActionView
 
@@ -38,8 +37,8 @@
     buttonView.hidden = NO;
     [buttonView addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [buttonView setTitle:messageButton[@"text"] forState:UIControlStateNormal];
-    buttonView.backgroundColor = [CTUIUtils ct_colorWithHexString:messageButton[@"bg"]];
-    [buttonView setTitleColor:[CTUIUtils ct_colorWithHexString:messageButton[@"color"]] forState:UIControlStateNormal];
+    buttonView.backgroundColor = [CTInAppUtils ct_colorWithHexString:messageButton[@"bg"]];
+    [buttonView setTitleColor:[CTInAppUtils ct_colorWithHexString:messageButton[@"color"]] forState:UIControlStateNormal];
     return buttonView;
 }
 

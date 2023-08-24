@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <sys/utsname.h>
+#import <sys/sysctl.h>
+#include <sys/types.h>
 
 #import "CleverTap.h"
 #import "CTConstants.h"
@@ -33,17 +34,17 @@ static NSString *_bundleId;
 static NSString *_build;
 static NSString *_osVersion;
 static NSString *_model;
+static NSObject *_networkInfo;
 static NSString *_carrier;
 static NSString *_countryCode;
 static NSString *_timeZone;
 static NSString *_radio;
 static NSString *_deviceWidth;
 static NSString *_deviceHeight;
-static NSString *_directCallSDKVersion;
+static NSString *_deviceName;
 
 #if !CLEVERTAP_NO_REACHABILITY_SUPPORT
 SCNetworkReachabilityRef _reachability;
-static CTTelephonyNetworkInfo *_networkInfo;
 #endif
 
 @interface CTDeviceInfo () {}
@@ -53,15 +54,15 @@ static CTTelephonyNetworkInfo *_networkInfo;
 @property (strong, readwrite) NSString *deviceId;
 @property (strong, readwrite) NSString *fallbackDeviceId;
 @property (strong, readwrite) NSString *vendorIdentifier;
+@property (strong, readonly) NSObject *networkInfo;
 @property (strong, readwrite) NSMutableArray *validationErrors;
 
 @end
 
 @implementation CTDeviceInfo
-const char *domainURL;
 
-@synthesize deviceId =_deviceId;
-@synthesize validationErrors =_validationErrors;
+@synthesize deviceId=_deviceId;
+@synthesize validationErrors=_validationErrors;
 
 static dispatch_queue_t backgroundQueue;
 #if !CLEVERTAP_NO_REACHABILITY_SUPPORT
@@ -73,6 +74,18 @@ static const char *backgroundQueueLabel = "com.clevertap.deviceInfo.backgroundQu
     dispatch_once(&onceToken, ^{
         _idfv = [self getIDFV];
         deviceIDLock = [NSRecursiveLock new];
+#if !CLEVERTAP_NO_REACHABILITY_SUPPORT
+        backgroundQueue = dispatch_queue_create(backgroundQueueLabel, DISPATCH_QUEUE_SERIAL);
+        // reachability callback
+        if ((_reachability = SCNetworkReachabilityCreateWithName(NULL, "wzrkt.com")) != NULL) {
+            SCNetworkReachabilityContext context = {0, (__bridge void*)self, NULL, NULL, NULL};
+            if (SCNetworkReachabilitySetCallback(_reachability, CleverTapReachabilityHandler, &context)) {
+                if (!SCNetworkReachabilitySetDispatchQueue(_reachability, backgroundQueue)) {
+                    SCNetworkReachabilitySetCallback(_reachability, NULL, NULL);
+                }
+            }
+        }
+#endif
     });
 }
 
@@ -90,23 +103,7 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
 - (instancetype)initWithConfig:(CleverTapInstanceConfig *)config andCleverTapID:(NSString *)cleverTapID {
     if (self = [super init]) {
         _config = config;
-        NSString *_domainURL = config.proxyDomain ? config.proxyDomain : kCTApiDomain;
-        domainURL = [_domainURL cStringUsingEncoding:NSASCIIStringEncoding];
         _validationErrors = [NSMutableArray new];
-        
-#if !CLEVERTAP_NO_REACHABILITY_SUPPORT
-        backgroundQueue = dispatch_queue_create(backgroundQueueLabel, DISPATCH_QUEUE_SERIAL);
-        // reachability callback
-        if ((_reachability = SCNetworkReachabilityCreateWithName(NULL, domainURL)) != NULL) {
-            SCNetworkReachabilityContext context = {0, (__bridge void*)self, NULL, NULL, NULL};
-            if (SCNetworkReachabilitySetCallback(_reachability, CleverTapReachabilityHandler, &context)) {
-                if (!SCNetworkReachabilitySetDispatchQueue(_reachability, backgroundQueue)) {
-                    SCNetworkReachabilitySetCallback(_reachability, NULL, NULL);
-                }
-            }
-        }
-        _networkInfo = [CTTelephonyNetworkInfo new];
-#endif
         [self initDeviceID:cleverTapID];
     }
     return self;
@@ -116,12 +113,12 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (NSString *)description {
+- (NSString*)description {
     return [NSString stringWithFormat:@"CleverTap.DeviceInfo.%@", self.config.accountId];
 }
 
 - (NSString *)deviceId {
-    return [self getDeviceID] ? [self getDeviceID] : self.fallbackDeviceId;
+    return _deviceId ? _deviceId : self.fallbackDeviceId;
 }
 
 - (void)setDeviceId:(NSString *)deviceId {
@@ -142,13 +139,14 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     return identifier;
 }
 
-+ (NSString *)getPlatformName {
-    struct utsname systemInfo;
-    uname(&systemInfo);
-    if (uname(&systemInfo) == EXIT_SUCCESS) {
-        return @(systemInfo.machine);
-    }
-    return @"";
++ (NSString*)getPlatformName {
+    size_t size;
+    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
+    char *machine = malloc(size);
+    sysctlbyname("hw.machine", machine, &size, NULL, 0);
+    NSString *platform = [NSString stringWithUTF8String:machine];
+    free(machine);
+    return platform;
 }
 
 - (void)initDeviceID:(NSString *)cleverTapID {
@@ -156,10 +154,9 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
         [deviceIDLock lock];
         
         _idfv = _idfv ? _idfv : [[self class] getIDFV];
-        if (!self.config.disableIDFV && _idfv && [_idfv length] > 5) {
+        if (_idfv && [_idfv length] > 5) {
             self.vendorIdentifier = _idfv;
         }
-        CleverTapLogInfo(self.config.logLevel, @"%s", !self.config.disableIDFV ? "CleverTap IDFV usage enabled" : "CleverTap IDFV usage disabled");
         
         // set the fallbackdeviceId on launch, in the event this instance had a fallbackid on last close
         self.fallbackDeviceId = [self getStoredFallbackDeviceID];
@@ -186,7 +183,7 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
             [self forceUpdateCustomDeviceID:cleverTapID];
             return;
         }
-        
+    
         if (self.vendorIdentifier) {
             [self forceUpdateDeviceID:[NSString stringWithFormat:@"-v%@", self.vendorIdentifier]];
             return;
@@ -200,11 +197,11 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     }
 }
 
-- (NSString *)deviceIdStorageKey {
+- (NSString*)deviceIdStorageKey {
     return [NSString stringWithFormat:@"%@:%@", self.config.accountId, kCLTAP_DEVICE_ID_TAG];
 }
 
-- (NSString *)fallbackDeviceIdStorageKey {
+- (NSString*)fallbackDeviceIdStorageKey {
     return [NSString stringWithFormat:@"%@:%@", self.config.accountId, kCLTAP_FALLBACK_DEVICE_ID_TAG];
 }
 
@@ -278,7 +275,7 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     }
     return fallbackdeviceID;
 }
-- (NSString *)findOrCreateFallbackDeviceID {
+- (NSString*)findOrCreateFallbackDeviceID {
     NSString *fallbackDeviceID = [self getStoredFallbackDeviceID];
     if (!fallbackDeviceID) {
         fallbackDeviceID = [self generateFallbackGUID];
@@ -308,7 +305,7 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     [CTPreferences removeObjectForKey:[self deviceIdStorageKey]];
 }
 
-- (void)recordDeviceError: (NSString *)errorString {
+- (void)recordDeviceError: (NSString*)errorString {
     CTValidationResult *error = [[CTValidationResult alloc] init];
     [error setErrorCode:514];
     [error setErrorDesc:[NSString stringWithFormat:@"%@", errorString]];
@@ -321,7 +318,7 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     _validationErrors = validationErrors;
 }
 
-- (NSMutableArray *)validationErrors {
+- (NSMutableArray*)validationErrors {
     @synchronized (_validationErrors) {
         NSMutableArray *errors = [NSMutableArray arrayWithArray:_validationErrors];
         [_validationErrors removeAllObjects];
@@ -329,35 +326,36 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     }
 }
 
-- (NSString *)sdkVersion {
+- (NSString*)sdkVersion {
     if (!_sdkVersion) {
         _sdkVersion = WR_SDK_REVISION;
     }
     return _sdkVersion;
 }
 
-- (NSString *)appVersion {
+- (NSString*)appVersion {
     if (!_appVersion) {
         _appVersion = [NSBundle mainBundle].infoDictionary[@"CFBundleShortVersionString"];
     }
     return _appVersion;
 }
 
-- (NSString *)bundleId {
+- (NSString*)bundleId {
     if (!_bundleId) {
         _bundleId = [NSBundle mainBundle].infoDictionary[@"CFBundleIdentifier"];
     }
     return _bundleId;
 }
 
-- (NSString *)appBuild {
+- (NSString*)appBuild {
     if (!_build) {
         _build = [NSBundle mainBundle].infoDictionary[@"CFBundleVersion"];
     }
     return _build;
 }
 
-- (NSString *)osName {
+
+- (NSString*)osName {
 #if TARGET_OS_TV
     return @"tvOS";
 #else
@@ -365,30 +363,28 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
 #endif
 }
 
-- (NSString *)osVersion {
+- (NSString*)osVersion {
     if (!_osVersion) {
         _osVersion = [[UIDevice currentDevice] systemVersion];
     }
     return _osVersion;
 }
 
-- (NSString *)manufacturer {
+- (NSString*)manufacturer {
     return @"Apple";
 }
 
-- (NSString *)model {
-    @synchronized (self) {
-        if (!_model) {
-            _model = [[self class] getPlatformName];
-        }
+- (NSString*)model {
+    if (!_model) {
+        _model = [[self class] getPlatformName];
     }
     return _model;
 }
 
-- (NSString *)deviceWidth {
+- (NSString*)deviceWidth {
     if (!_deviceWidth) {
         float scale = [[UIScreen mainScreen] scale];
-        float ppi = scale * ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 132 : 163);
+        float ppi = scale * ((UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? 132 : 163);
         float width = ([[UIScreen mainScreen] bounds].size.width * scale);
         float rWidth = width / ppi;
         _deviceWidth = [NSString stringWithFormat:@"%.2f", [CTUtils toTwoPlaces:rWidth]];
@@ -396,10 +392,10 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     return _deviceWidth;
 }
 
-- (NSString *)deviceHeight {
+- (NSString*)deviceHeight {
     if (!_deviceHeight) {
         float scale = [[UIScreen mainScreen] scale];
-        float ppi = scale * ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad ? 132 : 163);
+        float ppi = scale * ((UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) ? 132 : 163);
         float height = ([[UIScreen mainScreen] bounds].size.height * scale);
         float rHeight = height / ppi;
         _deviceHeight = [NSString stringWithFormat:@"%.2f", [CTUtils toTwoPlaces:rHeight]];
@@ -407,75 +403,125 @@ static void CleverTapReachabilityHandler(SCNetworkReachabilityRef target, SCNetw
     return _deviceHeight;
 }
 
-- (NSString *)timeZone {
+- (NSString*)deviceName {
+    if (!_deviceName) {
+        _deviceName = [UIDevice currentDevice].name;
+    }
+    return _deviceName;
+}
+
+- (NSString*)carrier {
+#if !CLEVERTAP_NO_REACHABILITY_SUPPORT
+    if (!_carrier) {
+        Class CTTelephonyNetworkInfo = NSClassFromString(@"CTTelephonyNetworkInfo");
+        if ([self.networkInfo isKindOfClass:CTTelephonyNetworkInfo]) {
+            SEL subscriberCellularProvider = NSSelectorFromString(@"subscriberCellularProvider");
+            SEL carrierName = NSSelectorFromString(@"carrierName");
+            id carrier = nil;
+            id (*imp1)(id, SEL) = (id (*)(id, SEL))[_networkInfo methodForSelector:subscriberCellularProvider];
+            if (imp1) {
+                carrier = imp1(_networkInfo, subscriberCellularProvider);
+            }
+            NSString* (*imp2)(id, SEL) = (NSString* (*)(id, SEL))[carrier methodForSelector:carrierName];
+            if (imp2) {
+                _carrier = imp2(carrier, carrierName);
+            }
+        }
+        if (!_carrier) {
+            _carrier = @"";
+        }
+    }
+#endif
+    return _carrier;
+}
+
+- (NSString*)countryCode {
+#if !CLEVERTAP_NO_REACHABILITY_SUPPORT
+    if (!_countryCode) {
+        Class CTTelephonyNetworkInfo = NSClassFromString(@"CTTelephonyNetworkInfo");
+        if ([self.networkInfo isKindOfClass:CTTelephonyNetworkInfo]) {
+            SEL subscriberCellularProvider = NSSelectorFromString(@"subscriberCellularProvider");
+            SEL isoCountryCode = NSSelectorFromString(@"isoCountryCode");
+            id (*imp1)(id, SEL) = (id (*)(id, SEL))[_networkInfo methodForSelector:subscriberCellularProvider];
+            id carrier = nil;
+            if (imp1) {
+                carrier = imp1(_networkInfo, subscriberCellularProvider);
+            }
+            NSString* (*imp2)(id, SEL) = (NSString* (*)(id, SEL))[carrier methodForSelector:isoCountryCode];
+            if (imp2) {
+                _countryCode = imp2(carrier, isoCountryCode);
+            }
+        }
+        if (!_countryCode) {
+            _countryCode = @"";
+        }
+    }
+#endif
+    return _countryCode;
+}
+
+
+- (NSString*)timeZone {
     if (!_timeZone) {
-        _timeZone = [NSTimeZone localTimeZone].name;
+        _timeZone =[NSTimeZone localTimeZone].name;
     }
     return _timeZone;
+}
+
+- (NSString*)radio {
+#if !CLEVERTAP_NO_REACHABILITY_SUPPORT
+    if (!_radio) {
+        Class CTTelephonyNetworkInfo = NSClassFromString(@"CTTelephonyNetworkInfo");
+        if ([self.networkInfo isKindOfClass:CTTelephonyNetworkInfo]) {
+            if (@available(iOS 12, *)) {
+                SEL serviceCurrentRadioAccessTechnology = NSSelectorFromString(@"serviceCurrentRadioAccessTechnology");
+                NSDictionary *(*imp1)(id, SEL) = (NSDictionary *(*)(id, SEL))[_networkInfo methodForSelector:serviceCurrentRadioAccessTechnology];
+                if (imp1) {
+                    NSDictionary *radioDict = imp1(self.networkInfo, serviceCurrentRadioAccessTechnology);
+                    [radioDict enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL * _Nonnull stop) {
+                        if (value && [value hasPrefix:@"CTRadioAccessTechnology"]) {
+                            _radio = [NSString stringWithString:[value substringFromIndex:23]];
+                        }
+                    }];
+                }
+            } else {
+                SEL currentRadioAccessTechnology = NSSelectorFromString(@"currentRadioAccessTechnology");
+                NSString *(*imp1)(id, SEL) = (NSString *(*)(id, SEL))[_networkInfo methodForSelector:currentRadioAccessTechnology];
+                if (imp1) {
+                    NSString *radio = imp1(self.networkInfo, currentRadioAccessTechnology);
+                    if (radio && [radio hasPrefix:@"CTRadioAccessTechnology"]) {
+                        _radio = [radio substringFromIndex:23];
+                    }
+                }
+            }
+        }
+        if (!_radio) {
+            _radio = @"";
+        }
+        CleverTapLogStaticInternal(@"Updated radio to %@", _radio);
+    }
+#endif
+    return _radio;
 }
 
 - (BOOL)wifi {
     return _wifi;
 }
 
+- (NSObject*)networkInfo {
 #if !CLEVERTAP_NO_REACHABILITY_SUPPORT
-
-- (NSString *)carrier {
-    if (!_carrier) {
-        _carrier = [self getCarrier].carrierName ?: @"";
-    }
-    return _carrier;
-}
-
-- (NSString *)countryCode {
-    if (!_countryCode) {
-        _countryCode =  [self getCarrier].isoCountryCode ?: @"";
-    }
-    return _countryCode;
-}
-
-- (NSString *)radio {
-    if (!_radio) {
-        _radio =  [self getCurrentRadioAccessTechnology] ?: @"";
-        CleverTapLogStaticInternal(@"Updated radio to %@", _radio);
-    }
-    return _radio;
-}
-
-- (CTCarrier *)getCarrier {
-    if (@available(iOS 12.0, *)) {
-        NSString *providerKey = _networkInfo.serviceSubscriberCellularProviders.allKeys.lastObject;
-        return _networkInfo.serviceSubscriberCellularProviders[providerKey];
-    } else {
-        return _networkInfo.subscriberCellularProvider;
-    }
-}
-
-- (NSString *)getCurrentRadioAccessTechnology {
-    __block NSString *radioValue;
-    if (@available(iOS 12, *)) {
-        NSDictionary *radioDict = _networkInfo.serviceCurrentRadioAccessTechnology;
-        [radioDict enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL * _Nonnull stop) {
-            if (value && [value hasPrefix:@"CTRadioAccessTechnology"]) {
-                radioValue = [NSString stringWithString:[value substringFromIndex:23]];
-            }
-        }];
-    } else {
-        NSString *radio = _networkInfo.currentRadioAccessTechnology;
-        if (radio && [radio hasPrefix:@"CTRadioAccessTechnology"]) {
-            radioValue = [radio substringFromIndex:23];
+    if (!_networkInfo) {
+        Class CTTelephonyNetworkInfo = NSClassFromString(@"CTTelephonyNetworkInfo");
+        SEL subscriberCellularProvider = NSSelectorFromString(@"subscriberCellularProvider");
+        SEL carrierName = NSSelectorFromString(@"carrierName");
+        if (CTTelephonyNetworkInfo && subscriberCellularProvider && carrierName) {
+            _networkInfo = [[NSClassFromString(@"CTTelephonyNetworkInfo") alloc] init];
+        } else {
+            _networkInfo = [NSObject new];
         }
     }
-    return radioValue;
-}
 #endif
-
-- (void)setDirectCallSDKVersion: (NSString *)version {
-    _directCallSDKVersion = version;
-}
-
-- (NSString *)directCallSDKVersion {
-    return _directCallSDKVersion;
+    return _networkInfo;
 }
 
 @end

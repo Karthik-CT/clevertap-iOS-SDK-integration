@@ -1,6 +1,6 @@
 #import "CTAlertViewController.h"
 #import "CTInAppDisplayViewControllerPrivate.h"
-#import "CTUIUtils.h"
+#import "CTInAppResources.h"
 
 @interface CTAlertViewController ()
 
@@ -97,7 +97,7 @@
     if (!self.notification) return;
     
     if (@available(iOS 13, *)) {
-        NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
+        NSSet *connectedScenes = [CTInAppResources getSharedApplication].connectedScenes;
         for (UIScene *scene in connectedScenes) {
             if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
                 UIWindowScene *windowScene = (UIWindowScene *)scene;

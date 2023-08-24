@@ -14,7 +14,6 @@
     copy.tabSelectedBgColor = self.tabSelectedBgColor;
     copy.noMessageViewText = self.noMessageViewText;
     copy.noMessageViewTextColor = self.noMessageViewTextColor;
-    copy.firstTabTitle = self.firstTabTitle;
     return copy;
 }
 
