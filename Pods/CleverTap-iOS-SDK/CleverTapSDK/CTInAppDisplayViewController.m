@@ -1,6 +1,6 @@
 #import "CTInAppDisplayViewController.h"
 #import "CTInAppDisplayViewControllerPrivate.h"
-#import "CTInAppResources.h"
+#import "CTUIUtils.h"
 
 @implementation CTInAppPassThroughWindow
 
@@ -25,22 +25,39 @@
 }
 @end
 
+@interface CTInAppDisplayViewController ()
+
+@property (nonatomic, assign) BOOL waitingForSceneWindow;
+@property (nonatomic, assign) BOOL animated;
+
+@end
+
 @implementation CTInAppDisplayViewController
 
 - (instancetype)initWithNotification:(CTInAppNotification *)notification {
     self = [super init];
     if (self) {
         _notification = notification;
+        if (@available(iOS 13, tvOS 13.0, *)) {
+            [[NSNotificationCenter defaultCenter] addObserver:self
+                                                     selector:@selector(sceneDidActivate:) name:UISceneDidActivateNotification
+                                                       object:nil];
+        }
     }
     return self;
 }
 
-#if !(TARGET_OS_TV)
-- (instancetype)initWithNotification:(CTInAppNotification *)notification jsInterface:(CleverTapJSInterface *)jsInterface {
-    self = [self initWithNotification:notification];
-    return self;
+// Notification will not be posted if the scene became active before registering the observer.
+// However, this means that there is already an active scene when the controller is initialized.
+// In this case, we do not need the notification, since showFromWindow will directly find the window from the already active scene and not wait for it.
+- (void)sceneDidActivate:(NSNotification *)notification
+API_AVAILABLE(ios(13.0), tvos(13.0)) {
+    if (!self.window && self.waitingForSceneWindow) {
+        CleverTapLogStaticDebug(@"%@:%@: Scene did activate. Showing from window.", [CTInAppDisplayViewController class], self);
+        self.waitingForSceneWindow = NO;
+        [self showFromWindow:self.animated];
+    }
 }
-#endif
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
     [coordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> context) {
@@ -52,17 +69,55 @@
 
 #if !(TARGET_OS_TV)
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
+    UIWindow *window = [CTUIUtils getKeyWindow];
+    UIInterfaceOrientationMask windowSupportedOrientations = [[CTUIUtils getSharedApplication] supportedInterfaceOrientationsForWindow:window];
+    
     if (_notification.hasPortrait && _notification.hasLandscape) {
-        return UIInterfaceOrientationMaskAll;
-    } else if (_notification.hasPortrait) {
-        return (UIInterfaceOrientationPortrait | UIInterfaceOrientationPortraitUpsideDown);
-    } else if (_notification.hasLandscape) {
-        return (UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight);
-    } else {
-        return UIInterfaceOrientationMaskAll;
+        return windowSupportedOrientations;
     }
+    if (_notification.hasPortrait) {
+        if ([self isOrientationSupported:UIInterfaceOrientationPortrait mask:windowSupportedOrientations]
+            && [self isOrientationSupported:UIInterfaceOrientationPortraitUpsideDown mask:windowSupportedOrientations]) {
+            return (UIInterfaceOrientationPortrait | UIInterfaceOrientationPortraitUpsideDown);
+        }
+        if ([self isOrientationSupported:UIInterfaceOrientationPortrait mask:windowSupportedOrientations]) {
+            return UIInterfaceOrientationMaskPortrait;
+        }
+        if ([self isOrientationSupported:UIInterfaceOrientationPortraitUpsideDown mask:windowSupportedOrientations]) {
+            return UIInterfaceOrientationMaskPortraitUpsideDown;
+        }
+        return windowSupportedOrientations;
+    }
+    if (_notification.hasLandscape) {
+        if ([self isOrientationSupported:UIInterfaceOrientationLandscapeLeft mask:windowSupportedOrientations]
+            && [self isOrientationSupported:UIInterfaceOrientationLandscapeRight mask:windowSupportedOrientations]) {
+            return (UIInterfaceOrientationMaskLandscapeLeft | UIInterfaceOrientationMaskLandscapeRight);
+        }
+        if ([self isOrientationSupported:UIInterfaceOrientationLandscapeLeft mask:windowSupportedOrientations]) {
+            return UIInterfaceOrientationMaskLandscapeLeft;
+        }
+        if ([self isOrientationSupported:UIInterfaceOrientationLandscapeRight mask:windowSupportedOrientations]) {
+            return UIInterfaceOrientationMaskLandscapeRight;
+        }
+        return windowSupportedOrientations;
+    }
+    return windowSupportedOrientations;
 }
 
+- (BOOL)isOrientationSupported:(UIInterfaceOrientation)orientation mask:(UIInterfaceOrientationMask)mask {
+    switch (orientation) {
+        case UIInterfaceOrientationPortrait:
+            return (mask & UIInterfaceOrientationMaskPortrait) != 0;
+        case UIInterfaceOrientationPortraitUpsideDown:
+            return (mask & UIInterfaceOrientationMaskPortraitUpsideDown) != 0;
+        case UIInterfaceOrientationLandscapeLeft:
+            return (mask & UIInterfaceOrientationMaskLandscapeLeft) != 0;
+        case UIInterfaceOrientationLandscapeRight:
+            return (mask & UIInterfaceOrientationMaskLandscapeRight) != 0;
+        default:
+            return NO;
+    }
+}
 #endif
 
 - (void)show:(BOOL)animated {
@@ -73,23 +128,43 @@
     NSAssert(false, @"Override in sub-class");
 }
 
-- (void)showFromWindow:(BOOL)animated {
-    
-    if (!self.notification) return;
-    
+- (void)initializeWindowOfClass:(Class)windowClass animated:(BOOL)animated {
     if (@available(iOS 13, tvOS 13.0, *)) {
-        NSSet *connectedScenes = [CTInAppResources getSharedApplication].connectedScenes;
+        NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
         for (UIScene *scene in connectedScenes) {
             if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
                 UIWindowScene *windowScene = (UIWindowScene *)scene;
-                self.window = [[UIWindow alloc] initWithFrame:
+                self.window = [[windowClass alloc] initWithFrame:
                                windowScene.coordinateSpace.bounds];
                 self.window.windowScene = windowScene;
             }
         }
     } else {
-        self.window = [[UIWindow alloc] initWithFrame:
-                       CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
+        self.window = [[windowClass alloc] initWithFrame:CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
+    }
+    
+    if (!self.window) {
+        CleverTapLogStaticDebug(@"%@:%@: UIWindow not initialized.", [CTInAppDisplayViewController class], self);
+        if (@available(iOS 13, tvOS 13.0, *)) {
+            // No active scene found to initialize the window from. Cannot present the view.
+            // Once a scene becomes active, the UISceneDidActivateNotification is posted.
+            // sceneDidActivate: will call again showFromWindow from the notification,
+            // so window is initialized from the scene that became active
+            CleverTapLogStaticDebug(@"%@:%@: Waiting for active scene.", [CTInAppDisplayViewController class], self);
+            self.animated = animated;
+            self.waitingForSceneWindow = YES;
+        }
+    } else {
+        CleverTapLogStaticInternal(@"%@:%@: Window initialized.", [CTInAppDisplayViewController class], self);
+    }
+}
+
+- (void)showFromWindow:(BOOL)animated {
+    if (!self.notification) return;
+    
+    [self initializeWindowOfClass:UIWindow.class animated:animated];
+    if (!self.window) {
+        return;
     }
     self.window.alpha = 0;
     self.window.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.75f];
@@ -98,8 +173,8 @@
     [self.window setHidden:NO];
     
     void (^completionBlock)(void) = ^ {
-        if (self.delegate && [self.delegate respondsToSelector:@selector(notificationDidShow:fromViewController:)]) {
-            [self.delegate notificationDidShow:self.notification fromViewController:self];
+        if (self.delegate) {
+            [self.delegate notificationDidShow:self.notification];
         }
     };
     
@@ -158,11 +233,11 @@
     if (_notification.inAppType != CTInAppTypeHeader && _notification.inAppType != CTInAppTypeFooter) {
         buttonView.layer.borderWidth = 1.0f;
         buttonView.layer.cornerRadius = [button.borderRadius floatValue];
-        buttonView.layer.borderColor = [[CTInAppUtils ct_colorWithHexString:button.borderColor] CGColor];
+        buttonView.layer.borderColor = [[CTUIUtils ct_colorWithHexString:button.borderColor] CGColor];
     }
     
-    [buttonView setBackgroundColor:[CTInAppUtils ct_colorWithHexString:button.backgroundColor]];
-    [buttonView setTitleColor:[CTInAppUtils ct_colorWithHexString:button.textColor] forState:UIControlStateNormal];
+    [buttonView setBackgroundColor:[CTUIUtils ct_colorWithHexString:button.backgroundColor]];
+    [buttonView setTitleColor:[CTUIUtils ct_colorWithHexString:button.textColor] forState:UIControlStateNormal];
     [buttonView addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [buttonView setTitle:button.text forState:UIControlStateNormal];
     return buttonView;
@@ -172,8 +247,7 @@
 #if (TARGET_OS_TV)
     return nil;
 #else
-    UIApplication *sharedApplication = [CTInAppResources getSharedApplication];
-    return UIInterfaceOrientationIsLandscape(sharedApplication.statusBarOrientation);
+    return [CTUIUtils isDeviceOrientationLandscape];
 #endif
 }
 
@@ -191,33 +265,78 @@
 
 - (void)handleButtonClickFromIndex:(int)index {
     CTNotificationButton *button = self.notification.buttons[index];
-    NSURL *buttonCTA = button.actionURL;
     NSString *buttonText = button.text;
     NSString *campaignId = self.notification.campaignId;
-    NSDictionary *buttonCustomExtras = button.customExtras;
-    
     if (campaignId == nil) {
         campaignId = @"";
     }
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(handleNotificationCTA:buttonCustomExtras:forNotification:fromViewController:withExtras:)]) {
-        [self.delegate handleNotificationCTA:buttonCTA buttonCustomExtras:buttonCustomExtras forNotification:self.notification fromViewController:self withExtras:@{@"wzrk_id":campaignId, @"wzrk_c2a": buttonText}];
+    if (self.notification.isLocalInApp) {
+        if  (index == 0) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(handleInAppPushPrimer:fromViewController:withFallbackToSettings:)]) {
+                [self.delegate handleInAppPushPrimer:self.notification
+                                  fromViewController:self
+                              withFallbackToSettings:self.notification.fallBackToNotificationSettings];
+            }
+        } else if (index == 1) {
+            if (self.delegate && [self.delegate respondsToSelector:@selector(inAppPushPrimerDidDismissed)]) {
+                [self.delegate inAppPushPrimerDidDismissed];
+            }
+        }
+        return;
     }
+    
+    // For showing Push Permission through InApp Campaign, positive button type is "rfp".
+    if (button.type == CTInAppActionTypeRequestForPermission) {
+        if (self.delegate && [self.delegate respondsToSelector:@selector(handleInAppPushPrimer:fromViewController:withFallbackToSettings:)]) {
+            [self.delegate handleInAppPushPrimer:self.notification
+                              fromViewController:self
+                          withFallbackToSettings:button.fallbackToSettings];
+        }
+        return;
+    }
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(handleNotificationAction:forNotification:withExtras:)]) {
+        [self.delegate handleNotificationAction:button.action forNotification:self.notification withExtras:@{CLTAP_NOTIFICATION_ID_TAG:campaignId, CLTAP_PROP_WZRK_CTA: buttonText}];
+    }
+}
+
+- (void)triggerInAppAction:(CTNotificationAction *)action callToAction:(NSString *)callToAction buttonId:(NSString *)buttonId {
+    NSMutableDictionary *extras = [NSMutableDictionary new];
+    if (callToAction) {
+        extras[CLTAP_PROP_WZRK_CTA] = callToAction;
+    }
+    if (buttonId) {
+        extras[@"button_id"] = buttonId;
+    }
+    NSString *campaignId = self.notification.campaignId;
+    if (campaignId == nil) {
+        campaignId = @"";
+    }
+    extras[CLTAP_NOTIFICATION_ID_TAG] = campaignId;
+    if (self.delegate &&
+        [self.delegate respondsToSelector:@selector(handleNotificationAction:forNotification:withExtras:)]) {
+        [self.delegate handleNotificationAction:action forNotification:self.notification withExtras:extras];
+    }
+    [self hide:YES];
 }
 
 - (void)handleImageTapGesture {
     CTNotificationButton *button = self.notification.buttons[0];
-    NSURL *buttonCTA = button.actionURL;
-    NSString *buttonText = @"image";
+    NSString *buttonText = @"";
     NSString *campaignId = self.notification.campaignId;
-    NSDictionary *buttonCustomExtras = button.customExtras;
-    
     if (campaignId == nil) {
         campaignId = @"";
     }
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(handleNotificationCTA:buttonCustomExtras:forNotification:fromViewController:withExtras:)]) {
-        [self.delegate handleNotificationCTA:buttonCTA buttonCustomExtras:buttonCustomExtras forNotification:self.notification fromViewController:self withExtras:@{@"wzrk_id":campaignId, @"wzrk_c2a": buttonText}];
+    if (self.delegate && [self.delegate respondsToSelector:@selector(handleNotificationAction:forNotification:withExtras:)]) {
+        [self.delegate handleNotificationAction:button.action forNotification:self.notification withExtras:@{CLTAP_NOTIFICATION_ID_TAG:campaignId, CLTAP_PROP_WZRK_CTA: buttonText}];
+    }
+}
+
+- (void)dealloc {
+    if (@available(iOS 13.0, tvOS 13.0, *)) {
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
     }
 }
 

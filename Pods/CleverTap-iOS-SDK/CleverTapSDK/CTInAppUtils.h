@@ -1,3 +1,4 @@
+
 #import <Foundation/Foundation.h>
 
 typedef NS_ENUM(NSUInteger, CTInAppType){
@@ -12,15 +13,25 @@ typedef NS_ENUM(NSUInteger, CTInAppType){
     CTInAppTypeInterstitialImage,
     CTInAppTypeHalfInterstitialImage,
     CTInAppTypeCoverImage,
+    CTInAppTypeCustom
+};
+
+typedef NS_ENUM(NSUInteger, CTInAppActionType){
+    CTInAppActionTypeUnknown,
+    CTInAppActionTypeClose,
+    CTInAppActionTypeOpenURL,
+    CTInAppActionTypeKeyValues,
+    CTInAppActionTypeCustom,
+    CTInAppActionTypeRequestForPermission
 };
 
 @interface CTInAppUtils : NSObject
 
-+ (CTInAppType)inAppTypeFromString:(NSString*_Nonnull)type;
++ (CTInAppType)inAppTypeFromString:(NSString *_Nonnull)type;
++ (NSString * _Nonnull)inAppTypeString:(CTInAppType)type;
++ (CTInAppActionType)inAppActionTypeFromString:(NSString *_Nonnull)type;
++ (NSString * _Nonnull)inAppActionTypeString:(CTInAppActionType)type;
 + (NSBundle *_Nullable)bundle;
-+ (NSString *_Nullable)XibNameForControllerName:(NSString *_Nonnull)controllerName;
-+ (UIImage *_Nullable)imageForName:(NSString *_Nonnull)name type:(NSString *_Nonnull)type;
-+ (UIColor *_Nullable)ct_colorWithHexString:(NSString* _Nonnull)string;
-+ (UIColor * _Nullable)ct_colorWithHexString:(NSString * _Nonnull)string withAlpha:(CGFloat)alpha;
++ (NSString *_Nullable)getXibNameForControllerName:(NSString *_Nonnull)controllerName;
 
 @end

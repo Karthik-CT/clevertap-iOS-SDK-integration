@@ -2,7 +2,7 @@
 #import "CTInAppDisplayViewControllerPrivate.h"
 #import "CTDismissButton.h"
 #import "CTInAppUtils.h"
-#import "CTInAppResources.h"
+#import "CTUIUtils.h"
 
 @interface CTCoverViewController ()
 
@@ -27,7 +27,7 @@
 
 - (void)loadView {
     [super loadView];
-    [[CTInAppUtils bundle] loadNibNamed:[CTInAppUtils XibNameForControllerName:NSStringFromClass([CTCoverViewController class])] owner:self options:nil];
+    [[CTInAppUtils bundle] loadNibNamed:[CTInAppUtils getXibNameForControllerName:NSStringFromClass([CTCoverViewController class])] owner:self options:nil];
 }
 
 - (void)viewDidLoad {
@@ -38,9 +38,17 @@
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-        CGFloat topLength = self.topLayoutGuide.length;
+        CGFloat topLength;
+        if (@available(iOS 11.0, *)) {
+            topLength = self.view.safeAreaInsets.top;
+        } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            topLength = self.topLayoutGuide.length;
+#pragma clang diagnostic pop
+        }
         [[NSLayoutConstraint constraintWithItem: self.closeButton
-                                      attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual
+                                      attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationGreaterThanOrEqual
                                          toItem:self.containerView
                                       attribute:NSLayoutAttributeTop
                                      multiplier:1.0 constant:topLength] setActive:YES];
@@ -55,7 +63,7 @@
     self.view.backgroundColor = [UIColor clearColor];
     
     // UIView container which holds all other subviews
-    self.containerView.backgroundColor = [CTInAppUtils ct_colorWithHexString:self.notification.backgroundColor];
+    self.containerView.backgroundColor = [CTUIUtils ct_colorWithHexString:self.notification.backgroundColor];
     
     self.closeButton.hidden = !self.notification.showCloseButton;
     
@@ -63,25 +71,31 @@
     self.imageView.clipsToBounds = YES;
     self.imageView.contentMode = UIViewContentModeScaleAspectFill;
     
-    if (self.notification.image && ![self deviceOrientationIsLandscape]) {
-        self.imageView.image = [UIImage imageWithData:self.notification.image];
-    }
-    
-    if (self.notification.imageLandscape && [self deviceOrientationIsLandscape]) {
-        self.imageView.image = [UIImage imageWithData:self.notification.imageLandscape];
+    if (![self deviceOrientationIsLandscape]) {
+        if (self.notification.inAppImage) {
+            self.imageView.image = self.notification.inAppImage;
+        } else if (self.notification.imageData) {
+            self.imageView.image  = [UIImage imageWithData:self.notification.imageData];
+        }
+    } else {
+        if (self.notification.inAppImageLandscape) {
+            self.imageView.image = self.notification.inAppImageLandscape;
+        } else if (self.notification.imageLandscapeData) {
+            self.imageView.image = [UIImage imageWithData:self.notification.imageLandscapeData];
+        }
     }
     
     if (self.notification.title) {
         self.titleLabel.textAlignment = NSTextAlignmentCenter;
         self.titleLabel.backgroundColor = [UIColor clearColor];
-        self.titleLabel.textColor = [CTInAppUtils ct_colorWithHexString:self.notification.titleColor];
+        self.titleLabel.textColor = [CTUIUtils ct_colorWithHexString:self.notification.titleColor];
         self.titleLabel.text = self.notification.title;
     }
     
     if (self.notification.message) {
         self.bodyLabel.textAlignment = NSTextAlignmentCenter;
         self.bodyLabel.backgroundColor = [UIColor clearColor];
-        self.bodyLabel.textColor = [CTInAppUtils ct_colorWithHexString:self.notification.messageColor];
+        self.bodyLabel.textColor = [CTUIUtils ct_colorWithHexString:self.notification.messageColor];
         self.bodyLabel.numberOfLines = 0;
         self.bodyLabel.text = self.notification.message;
     }

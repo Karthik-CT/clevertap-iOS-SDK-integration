@@ -3,6 +3,7 @@
 #import "CTInAppDisplayViewControllerPrivate.h"
 #import "CTImageInAppViewControllerPrivate.h"
 #import "CTDismissButton.h"
+#import "CTUIUtils.h"
 
 static const CGFloat kTabletSpacingConstant = 40.f;
 static const CGFloat kSpacingConstant = 160.f;
@@ -36,7 +37,7 @@ static const CGFloat kSpacingConstant = 160.f;
 - (void)layoutNotification {
     
     // UIView container which holds all other subviews
-    self.containerView.backgroundColor = [CTInAppUtils ct_colorWithHexString:self.notification.backgroundColor];
+    self.containerView.backgroundColor = [CTUIUtils ct_colorWithHexString:self.notification.backgroundColor];
     self.closeButton.hidden = !self.notification.showCloseButton;
     
     switch (self.notification.inAppType) {
@@ -56,7 +57,7 @@ static const CGFloat kSpacingConstant = 160.f;
 }
 
 - (void)handleLayoutForIdiomPad {
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+    if ([CTUIUtils isUserInterfaceIdiomPad]) {
         [self.containerView setTranslatesAutoresizingMaskIntoConstraints:NO];
         if (self.notification.tablet) {
             if (![self deviceOrientationIsLandscape]) {
@@ -116,12 +117,18 @@ static const CGFloat kSpacingConstant = 160.f;
     UITapGestureRecognizer *imageTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleImageTapGesture:)];
     [self.imageView addGestureRecognizer:imageTapGesture];
     
-    if (self.notification.image && ![self deviceOrientationIsLandscape]) {
-        self.imageView.image = [UIImage imageWithData:self.notification.image];
-    }
-    
-    if (self.notification.imageLandscape && [self deviceOrientationIsLandscape]) {
-        self.imageView.image = [UIImage imageWithData:self.notification.imageLandscape];
+    if (![self deviceOrientationIsLandscape]) {
+        if (self.notification.inAppImage) {
+            self.imageView.image = self.notification.inAppImage;
+        } else if (self.notification.imageData) {
+            self.imageView.image  = [UIImage imageWithData:self.notification.imageData];
+        }
+    } else {
+        if (self.notification.inAppImageLandscape) {
+            self.imageView.image = self.notification.inAppImageLandscape;
+        } else if (self.notification.imageLandscapeData) {
+            self.imageView.image = [UIImage imageWithData:self.notification.imageLandscapeData];
+        }
     }
 }
 

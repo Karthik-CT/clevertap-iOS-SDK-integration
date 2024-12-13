@@ -85,6 +85,7 @@
 @property (nonatomic, strong, nullable) UIColor *tabUnSelectedTextColor;
 @property (nonatomic, strong, nullable) NSString *noMessageViewText;
 @property (nonatomic, strong, nullable) UIColor *noMessageViewTextColor;
+@property (nonatomic, strong, nullable) NSString *firstTabTitle;
 
 @end
 
@@ -117,7 +118,7 @@ typedef void (^CleverTapInboxUpdatedBlock)(void);
  This method returns the total number of inbox messages for the user.
  */
 
-- (NSUInteger)getInboxMessageCount;
+- (NSInteger)getInboxMessageCount;
 
 /*!
  @method
@@ -126,7 +127,7 @@ typedef void (^CleverTapInboxUpdatedBlock)(void);
  This method returns the total number of unread inbox messages for the user.
  */
 
-- (NSUInteger)getInboxMessageUnreadCount;
+- (NSInteger)getInboxMessageUnreadCount;
 
 /*!
  @method
@@ -188,10 +189,28 @@ typedef void (^CleverTapInboxUpdatedBlock)(void);
  @method
  
  @abstract
+ This method deletes `CleverTapInboxMessage` objects for the given `Message Id` as a collection.
+ */
+
+- (void)deleteInboxMessagesForIDs:(NSArray<NSString *> *_Nonnull)messageIds;
+
+/*!
+ @method
+ 
+ @abstract
  This method marks the `CleverTapInboxMessage` object as read for given 'Message Id` as String.
  */
 
 - (void)markReadInboxMessageForID:(NSString * _Nonnull)messageId;
+
+/*!
+ @method
+ 
+ @abstract
+ This method marks the `CleverTapInboxMessage` object as read for given 'Message Ids` as Collection.
+ */
+
+- (void)markReadInboxMessagesForIDs:(NSArray<NSString *> *_Nonnull)messageIds;
 
 /*!
  @method
@@ -232,5 +251,12 @@ typedef void (^CleverTapInboxUpdatedBlock)(void);
  */
 - (void)recordInboxNotificationClickedEventForID:(NSString * _Nonnull)messageId;
 
+/*!
+ @method
+ 
+ @abstract
+ This method dismisses the inbox controller
+ */
+- (void)dismissAppInbox;
 
 @end

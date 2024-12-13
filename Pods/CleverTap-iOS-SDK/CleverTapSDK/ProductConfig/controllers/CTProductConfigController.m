@@ -1,9 +1,9 @@
 #import "CTProductConfigController.h"
 #import "CTConstants.h"
 #import "CTPreferences.h"
-#import "CTPreferences.h"
 #import "CleverTapInstanceConfig.h"
 #import "CleverTapProductConfigPrivate.h"
+#import "CTUtils.h"
 
 @class CleverTapConfigValue;
 
@@ -138,7 +138,7 @@ typedef void (^CTProductConfigOperationBlock)(void);
 
 - (void)notifyInitUpdate {
     if (self.delegate && [self.delegate respondsToSelector:@selector(productConfigDidInitialize)]) {
-        [[self class] runSyncMainQueue:^{
+        [CTUtils runSyncMainQueue:^{
             [self.delegate productConfigDidInitialize];
         }];
     }
@@ -146,7 +146,7 @@ typedef void (^CTProductConfigOperationBlock)(void);
 
 - (void)notifyFetchUpdate {
     if (self.delegate && [self.delegate respondsToSelector:@selector(productConfigDidFetch)]) {
-        [[self class] runSyncMainQueue:^{
+        [CTUtils runSyncMainQueue:^{
             [self.delegate productConfigDidFetch];
         }];
     }
@@ -154,7 +154,7 @@ typedef void (^CTProductConfigOperationBlock)(void);
 
 - (void)notifyActivateUpdate {
     if (self.delegate && [self.delegate respondsToSelector:@selector(productConfigDidActivate)]) {
-        [[self class] runSyncMainQueue:^{
+        [CTUtils runSyncMainQueue:^{
             [self.delegate productConfigDidActivate];
         }];
     }
@@ -171,7 +171,8 @@ typedef void (^CTProductConfigOperationBlock)(void);
     NSString *filePath = [self dataArchiveFileName];
     __weak CTProductConfigController *weakSelf = self;
     CTProductConfigOperationBlock opBlock = ^{
-        NSArray *data = [CTPreferences unarchiveFromFile:filePath removeFile:YES];
+        NSSet *allowedClasses = [NSSet setWithObjects:[NSArray class], [NSDictionary class], nil];
+        NSArray *data = [CTPreferences unarchiveFromFile: filePath ofTypes: allowedClasses removeFile: YES];
         if (data) {
             [weakSelf _updateProductConfig:data isNew:NO];
         }
@@ -188,7 +189,7 @@ typedef void (^CTProductConfigOperationBlock)(void);
 - (void)_archiveData:(NSArray*)data sync:(BOOL)sync {
     NSString *filePath = [self dataArchiveFileName];
     CTProductConfigOperationBlock opBlock = ^{
-        [CTPreferences archiveObject:data forFileName:filePath];
+        [CTPreferences archiveObject:data forFileName:filePath config:self->_config];
     };
     if (sync) {
         opBlock();

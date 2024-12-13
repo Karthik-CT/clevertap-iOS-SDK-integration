@@ -1,17 +1,22 @@
+
 #import <UIKit/UIKit.h>
 #import "CTInAppUtils.h"
+#import "CTConstants.h"
 #if !CLEVERTAP_NO_INAPP_SUPPORT
-#import "CTInAppResources.h"
+#import "CTUIUtils.h"
 #endif
 
-static NSDictionary *_inAppTypeMap;
+static NSDictionary<NSString *, NSNumber *> *_inAppTypeMap;
+static NSDictionary<NSNumber *, NSString *> *_inAppTypeToStringMap;
+static NSDictionary<NSString *, NSNumber *> *_inAppActionTypeStringToTypeMap;
+static NSDictionary<NSNumber *, NSString *> *_inAppActionTypeTypeToStringMap;
 
 @implementation CTInAppUtils
 
-+ (CTInAppType)inAppTypeFromString:(NSString*)type {
++ (NSDictionary<NSString *, NSNumber *> *)inAppTypeStringToTypeMap {
     if (_inAppTypeMap == nil) {
         _inAppTypeMap = @{
-            @"custom-html": @(CTInAppTypeHTML),
+            CLTAP_INAPP_HTML_TYPE: @(CTInAppTypeHTML),
             @"interstitial": @(CTInAppTypeInterstitial),
             @"cover": @(CTInAppTypeCover),
             @"header-template": @(CTInAppTypeHeader),
@@ -20,72 +25,103 @@ static NSDictionary *_inAppTypeMap;
             @"alert-template": @(CTInAppTypeAlert),
             @"interstitial-image": @(CTInAppTypeInterstitialImage),
             @"half-interstitial-image": @(CTInAppTypeHalfInterstitialImage),
-            @"cover-image": @(CTInAppTypeCoverImage)
+            @"cover-image": @(CTInAppTypeCoverImage),
+            @"custom-code": @(CTInAppTypeCustom)
         };
     }
-    
-    NSNumber *_type = type != nil ? _inAppTypeMap[type] : @(CTInAppTypeUnknown);
+    return _inAppTypeMap;
+}
+
++ (NSDictionary<NSNumber *, NSString *> *)inAppTypeTypeToStringMap {
+    if (_inAppTypeToStringMap == nil) {
+        NSDictionary *dict = [self inAppTypeStringToTypeMap];
+        NSMutableDictionary *swapped = [NSMutableDictionary new];
+        [dict enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
+            swapped[value] = key;
+        }];
+        _inAppTypeToStringMap = [swapped copy];
+    }
+    return _inAppTypeToStringMap;
+}
+
++ (CTInAppType)inAppTypeFromString:(NSString*)type {
+    NSNumber *_type = type != nil ? [self inAppTypeStringToTypeMap][type] : @(CTInAppTypeUnknown);
     if (_type == nil) {
         _type = @(CTInAppTypeUnknown);
     }
     return [_type integerValue];
 }
 
++ (NSString * _Nonnull)inAppTypeString:(CTInAppType)type {
+    return self.inAppTypeTypeToStringMap[@(type)];
+}
+
++ (NSDictionary<NSNumber *, NSString *> *)inAppActionTypeTypeToStringMap {
+    if (_inAppActionTypeTypeToStringMap == nil) {
+        NSDictionary *dict = [self inAppActionTypeStringToTypeMap];
+        NSMutableDictionary *swapped = [NSMutableDictionary new];
+        [dict enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
+            swapped[value] = key;
+        }];
+        _inAppActionTypeTypeToStringMap = [swapped copy];
+    }
+    return _inAppActionTypeTypeToStringMap;
+}
+
++ (NSDictionary<NSString *, NSNumber *> *)inAppActionTypeStringToTypeMap {
+    if (_inAppActionTypeStringToTypeMap == nil) {
+        _inAppActionTypeStringToTypeMap = @{
+            @"close": @(CTInAppActionTypeClose),
+            @"url": @(CTInAppActionTypeOpenURL),
+            @"kv": @(CTInAppActionTypeKeyValues),
+            @"custom-code": @(CTInAppActionTypeCustom),
+            @"rfp": @(CTInAppActionTypeRequestForPermission)
+        };
+    }
+    return _inAppActionTypeStringToTypeMap;
+}
+
++ (CTInAppActionType)inAppActionTypeFromString:(NSString* _Nonnull)type {
+    NSNumber *_type = type != nil ? [self inAppActionTypeStringToTypeMap][type] : @(CTInAppActionTypeUnknown);
+    if (_type == nil) {
+        _type = @(CTInAppActionTypeUnknown);
+    }
+    return [_type integerValue];
+}
+
++ (NSString * _Nonnull)inAppActionTypeString:(CTInAppActionType)type {
+    return self.inAppActionTypeTypeToStringMap[@(type)];
+}
+
 + (NSBundle *)bundle {
 #if CLEVERTAP_NO_INAPP_SUPPORT
     return nil;
 #else
-    return [CTInAppResources bundle];
+    return [CTUIUtils bundle];
 #endif
 }
 
-+ (NSString *)XibNameForControllerName:(NSString *)controllerName {
-#if CLEVERTAP_NO_INAPP_SUPPORT
++ (NSString *)getXibNameForControllerName:(NSString *)controllerName {
+#if CLEVERTAP_NO_INAPP_SUPPORT || TARGET_OS_TV
     return nil;
-#else
-    return [CTInAppResources XibNameForControllerName:controllerName];
-#endif
-}
-
-+ (UIImage *)imageForName:(NSString *)name type:(NSString *)type {
-#if CLEVERTAP_NO_INAPP_SUPPORT
-    return nil;
-#else
-    return [CTInAppResources imageForName:name type:type];
-#endif
-    
-}
-
-+ (UIColor * _Nullable)ct_colorWithHexString:(NSString *)string {
-    
-    return  [self ct_colorWithHexString:string withAlpha:1.0];
-}
-
-+ (UIColor * _Nullable)ct_colorWithHexString:(NSString *)string withAlpha:(CGFloat)alpha {
-    
-    if (![string isKindOfClass:[NSString class]] || [string length] == 0) {
-        return [UIColor colorWithRed:0.0f green:0.0f blue:0.0f alpha:1.0f];
+#else    
+    NSMutableString *xib = [NSMutableString stringWithString:controllerName];
+    BOOL landscape = [CTUIUtils isDeviceOrientationLandscape];
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
+        if (landscape) {
+            [xib appendString:@"~iphoneland"];
+        } else {
+            [xib appendString:@"~iphoneport"];
+        }
+    } else {
+        if (landscape) {
+            [xib appendString:@"~ipadland"];
+        } else {
+            [xib appendString:@"~ipad"];
+        }
     }
-    
-    // Convert hex string to an integer
-    unsigned int hexint = 0;
-    
-    // Create scanner
-    NSScanner *scanner = [NSScanner scannerWithString:string];
-    
-    // Tell scanner to skip the # character
-    [scanner setCharactersToBeSkipped:[NSCharacterSet
-                                       characterSetWithCharactersInString:@"#"]];
-    [scanner scanHexInt:&hexint];
-    
-    // Create color object, specifying alpha
-    UIColor *color =
-    [UIColor colorWithRed:((CGFloat) ((hexint & 0xFF0000) >> 16))/255
-                    green:((CGFloat) ((hexint & 0xFF00) >> 8))/255
-                     blue:((CGFloat) (hexint & 0xFF))/255
-                    alpha:alpha];
-    
-    return color;
+    return [xib copy];
+#endif
 }
 
 @end

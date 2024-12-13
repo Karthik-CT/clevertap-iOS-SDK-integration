@@ -9,7 +9,7 @@ import UserNotifications
 import CTNotificationService
 import CleverTapSDK
 
-class NotificationService: CTNotificationServiceExtension {
+class NotificationService: NSE {
     
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?

@@ -7,7 +7,7 @@ target 'push' do
   # Comment the next line if you don't want to use dynamic frameworks
   use_frameworks!
   
-  pod "CleverTap-iOS-SDK", "3.9.2"
+  pod "CleverTap-iOS-SDK"
   # Pods for push
   
   target 'NotificationService' do
@@ -21,14 +21,8 @@ target 'push' do
     pod "CleverTap-iOS-SDK"
   end
   
-#  pod 'CleverTap-iOS-SDK', '5.0.1'
-#  pod 'CTNotificationService'
-#  pod 'CTNotificationContent'
-#  pod 'Firebase/Analytics'
-#  pod 'Firebase/Crashlytics'
-#  pod 'Firebase/Core'
-#  pod 'Firebase/Firestore'
-#  pod 'Firebase/DynamicLinks'
-#  pod 'Firebase/Messaging'
+  target 'RichTest' do
+    pod "CleverTap-iOS-SDK"
+  end
   
 end

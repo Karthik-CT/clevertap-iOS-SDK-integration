@@ -1,5 +1,5 @@
-
 #import "CTUIUtils.h"
+#import "CTConstants.h"
 
 #define CTSPMBundlePath @"/CleverTapSDK_CleverTapSDK.bundle/"
 
@@ -53,7 +53,7 @@
 
 + (CGFloat)getLeftMargin {
     CGFloat margin = 0;
-    if (@available(iOS 11.0, *)) {
+    if (@available(iOS 11.0, tvOS 11.0, *)) {
         for (UIWindow *window in [CTUIUtils getSharedApplication].windows) {
             if (window.isKeyWindow) {
                 margin = window.safeAreaInsets.left;
@@ -76,7 +76,10 @@
     } else if (@available(iOS 13.0, *)) {
         orientation = [CTUIUtils getSharedApplication].windows.firstObject.windowScene.interfaceOrientation;
     } else {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         orientation = [[CTUIUtils getSharedApplication] statusBarOrientation];
+#pragma clang diagnostic pop
     }
     BOOL landscape = UIInterfaceOrientationIsLandscape(orientation);
     return landscape;
@@ -112,6 +115,44 @@
                     alpha:alpha];
     
     return color;
+}
+
++ (BOOL)runningInsideAppExtension {
+    return [[self class] getSharedApplication] == nil;
+}
+
++ (void)openURL:(NSURL *)ctaURL forModule:(NSString *)ctModule {
+    UIApplication *sharedApplication = [[self class] getSharedApplication];
+    if (sharedApplication == nil) {
+        return;
+    }
+    CleverTapLogStaticDebug(@"%@: firing deep link: %@", ctModule, ctaURL);
+    id dlURL;
+    if (@available(iOS 10.0, *)) {
+        if ([sharedApplication respondsToSelector:@selector(openURL:options:completionHandler:)]) {
+            NSMethodSignature *signature = [UIApplication
+                                            instanceMethodSignatureForSelector:@selector(openURL:options:completionHandler:)];
+            NSInvocation *invocation = [NSInvocation
+                                        invocationWithMethodSignature:signature];
+            [invocation setTarget:sharedApplication];
+            [invocation setSelector:@selector(openURL:options:completionHandler:)];
+            NSDictionary *options = @{};
+            id completionHandler = nil;
+            dlURL = ctaURL;
+            [invocation setArgument:&dlURL atIndex:2];
+            [invocation setArgument:&options atIndex:3];
+            [invocation setArgument:&completionHandler atIndex:4];
+            [invocation invoke];
+        } else {
+            if ([sharedApplication respondsToSelector:@selector(openURL:)]) {
+                [sharedApplication performSelector:@selector(openURL:) withObject:ctaURL];
+            }
+        }
+    } else {
+        if ([sharedApplication respondsToSelector:@selector(openURL:)]) {
+            [sharedApplication performSelector:@selector(openURL:) withObject:ctaURL];
+        }
+    }
 }
 
 @end

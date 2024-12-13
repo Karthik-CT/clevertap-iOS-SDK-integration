@@ -1,6 +1,6 @@
 #import "CTAlertViewController.h"
 #import "CTInAppDisplayViewControllerPrivate.h"
-#import "CTInAppResources.h"
+#import "CTUIUtils.h"
 
 @interface CTAlertViewController ()
 
@@ -9,6 +9,7 @@
 @implementation CTAlertViewController
 
 - (instancetype)initWithNotification:(CTInAppNotification *)notification {
+    self = [super initWithNotification:notification];
     if (self) {
         self.notification = notification;
     }
@@ -97,7 +98,7 @@
     if (!self.notification) return;
     
     if (@available(iOS 13, *)) {
-        NSSet *connectedScenes = [CTInAppResources getSharedApplication].connectedScenes;
+        NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
         for (UIScene *scene in connectedScenes) {
             if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
                 UIWindowScene *windowScene = (UIWindowScene *)scene;
@@ -117,8 +118,8 @@
     [self.window setHidden:NO];
     
     void (^completionBlock)(void) = ^ {
-        if (self.delegate && [self.delegate respondsToSelector:@selector(notificationDidShow:fromViewController:)]) {
-            [self.delegate notificationDidShow:self.notification fromViewController:self];
+        if (self.delegate) {
+            [self.delegate notificationDidShow:self.notification];
         }
     };
     

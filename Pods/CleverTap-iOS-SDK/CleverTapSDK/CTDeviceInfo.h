@@ -21,16 +21,17 @@
 @property (strong, readonly) NSString *deviceWidth;
 @property (strong, readonly) NSString *deviceHeight;
 @property (atomic, readonly) NSString *deviceId;
-@property (atomic, readonly) NSString *deviceName;
 @property (atomic, readonly) NSString *fallbackDeviceId;
 @property (atomic, readwrite) NSString *library;
 @property (assign, readonly) BOOL wifi;
+@property (assign, readonly) BOOL isOnline;
+@property (assign, readonly) BOOL enableFileProtection;
 @property (strong, readonly) NSMutableArray<CTValidationResult*>* validationErrors;
+@property (strong, readonly) NSLocale *systemLocale;
 
 - (instancetype)initWithConfig:(CleverTapInstanceConfig *)config andCleverTapID:(NSString *)cleverTapID;
 - (void)forceUpdateDeviceID:(NSString *)newDeviceID;
 - (void)forceNewDeviceID;
 - (void)forceUpdateCustomDeviceID:(NSString *)cleverTapID;
 - (BOOL)isErrorDeviceID;
-
 @end

@@ -1,11 +1,14 @@
 #import <Foundation/Foundation.h>
+#import "CTDeviceInfo.h"
+#import "CTDispatchQueueManager.h"
 
 @class CleverTapInstanceConfig;
 @class CleverTapEventDetail;
 
 @interface CTLocalDataStore : NSObject
 
-- (instancetype)initWithConfig:(CleverTapInstanceConfig *)config andProfileValues:(NSDictionary*)profileValues;
+
+- (instancetype)initWithConfig:(CleverTapInstanceConfig *)config profileValues:(NSDictionary*)profileValues andDeviceInfo:(CTDeviceInfo*)deviceInfo dispatchQueueManager:(CTDispatchQueueManager*)dispatchQueueManager;
 
 - (void)persistEvent:(NSDictionary *)event;
 
@@ -32,6 +35,8 @@
 - (void)removeProfileFieldForKey:(NSString *)key;
 
 - (id)getProfileFieldForKey:(NSString *)key;
+
+- (NSDictionary<NSString *, NSDictionary<NSString *, id> *> *)getUserAttributeChangeProperties:(NSDictionary *)event;
 
 - (void)persistLocalProfileIfRequired;
 

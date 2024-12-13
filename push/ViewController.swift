@@ -35,6 +35,32 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     }
     
 
+    @IBAction func btnClickLogin(_ sender: UIButton) {
+        let profile: Dictionary<String, Any> = [
+            "Name": txtName.text!,
+            "Identity": txtIdentity.text!,
+            "Email": txtEmail.text!,
+            "Phone": "+91"+txtMobileNumber.text!,
+            "MSG-email": true,
+            "MSG-push": true,
+            "MSG-sms": true,
+            "MSG-whatsapp": true
+        ]
+        CleverTap.sharedInstance()?.onUserLogin(profile)
+        
+        let defaults = UserDefaults(suiteName: "group.clevertapTest")
+        defaults!.set(txtEmail.text!, forKey: "userEmailID")
+        defaults!.set(txtIdentity.text!, forKey: "userIdentity")
+        defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
+        
+        self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
+        
+        let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
+        let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
+//        self.navigationController!.pushViewController(vc, animated: true)
+        self.present(vc, animated: true)
+    }
+    
     @IBAction func btnLoginClicked(_ sender: UIButton) {
         let profile: Dictionary<String, Any> = [
             "Name": txtName.text!,
