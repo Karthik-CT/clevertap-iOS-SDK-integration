@@ -9,9 +9,11 @@ import UIKit
 import CleverTapSDK
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, CleverTapPushNotificationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate, CleverTapPushNotificationDelegate, CleverTapURLDelegate {
     
     let center  = UNUserNotificationCenter.current()
+    var window: UIWindow?
+    var lastHandledURL: URL?
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
@@ -20,23 +22,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
         
         registerForPush()
-        
-        //        // register category with actions
-        //        let action1 = UNNotificationAction(identifier: "action_1", title: "Back", options: [])
-        //        let action2 = UNNotificationAction(identifier: "action_2", title: "Next", options: [])
-        //        let action3 = UNNotificationAction(identifier: "action_3", title: "View In App", options: [])
-        //        let category = UNNotificationCategory(identifier: "CTNotification", actions: [action1, action2, action3], intentIdentifiers: [], options: [])
-        //        UNUserNotificationCenter.current().setNotificationCategories([category])
-        
-//        let profile: Dictionary<String, Any> = [
-//            "Identity": "t2",
-//            "Email": "t2@test.com",
-//            "email": "t1@test.com"
-//        ]
-//        CleverTap.sharedInstance()?.onUserLogin(profile)
         CleverTap.sharedInstance()?.enableDeviceNetworkInfoReporting(true)
         
         UNUserNotificationCenter.current().delegate = self
+        
+        CleverTap.sharedInstance()?.setUrlDelegate(self)
+        CleverTap.sharedInstance()?.setPushNotificationDelegate(self)
+        // Create your root view controller (e.g., ViewController)
+        let rootViewController = ViewController() // Replace with your actual root view controller
+        
+        // Wrap the root view controller in a UINavigationController
+        let navigationController = UINavigationController(rootViewController: rootViewController)
+        
+        // Set the root view controller as the UINavigationController
+        window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = navigationController
+        window?.makeKeyAndVisible()
         
         return true
     }
@@ -92,14 +93,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         print("Push Notification Tapped with Custom Extras: \(customExtras)");
     }
     
-    //Manually Enable Support for Universal (Deep) Link Tracking
-//    func shouldHandleCleverTap(_ url: URL?, for channel: CleverTapChannel) -> Bool {
-//        if let newUrl = url {
-//            UIApplication.shared.open(newUrl)
-//        }
-//        return false
-//    }
-    
     func application(_ application: UIApplication,
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
@@ -120,5 +113,38 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
         // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
     }
+    
+    public func shouldHandleCleverTap(_ url: URL?, for channel: CleverTapChannel) -> Bool {
+        print("Handling URL: \(url!) for channel: \(channel)")
+        guard let url = url else {
+            print("URL is nil")
+            return false
+        }
+        lastHandledURL = url
+        if url.absoluteString == "https://ct-web-integration.netlify.app/page2" {
+            DispatchQueue.main.async {
+                self.redirectToTarget()
+            }
+            return false
+        }
+        return false
+    }
+    
+    private func redirectToTarget() {
+        guard let navigationController = UIApplication.shared.windows.first(where: { $0.isKeyWindow })?.rootViewController as? UINavigationController else {
+            print("Navigation controller not found")
+            return
+        }
+        
+        // Avoid pushing the same view controller multiple times
+        if !(navigationController.topViewController is HomeScreenViewController) {
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            if let targetVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {
+                navigationController.pushViewController(targetVC, animated: true)
+            }
+        }
+    }
+    
+    
 }
 

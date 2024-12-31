@@ -21,8 +21,8 @@ target 'push' do
     pod "CleverTap-iOS-SDK"
   end
   
-  target 'RichTest' do
-    pod "CleverTap-iOS-SDK"
-  end
+#  target 'RichTest' do
+#    pod "CleverTap-iOS-SDK"
+#  end
   
 end

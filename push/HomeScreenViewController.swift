@@ -19,7 +19,11 @@ class HomeScreenViewController: UIViewController, CleverTapInboxViewControllerDe
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
         
-        txtPushEvent.delegate = self
+        if let txtPushEvent = txtPushEvent {
+            txtPushEvent.delegate = self
+        } else {
+            print("txtPushEvent is nil")
+        }
         
         //Initialize App Inbox
         CleverTap.sharedInstance()?.initializeInbox(callback: ({ (success) in
