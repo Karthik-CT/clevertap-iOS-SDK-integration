@@ -121,13 +121,67 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             return false
         }
         lastHandledURL = url
-        if url.absoluteString == "https://ct-web-integration.netlify.app/page2" {
+        if url.absoluteString == "https://ct-web-integration.netlify.app/page2" || url.absoluteString == "karthikdl://page2" {
             DispatchQueue.main.async {
                 self.redirectToTarget()
             }
             return false
         }
         return false
+    }
+    
+    private func redirectToTarget2() {
+        print("Redirecting to target...")
+
+        guard let topVC = getTopMostViewController() else {
+            print("Top-most view controller not found")
+            return
+        }
+
+        if let navigationController = topVC.navigationController {
+            print("Navigation Controller found")
+            if !(navigationController.topViewController is HomeScreenViewController) {
+                let storyboard = UIStoryboard(name: "Main", bundle: nil)
+                if let targetVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {
+                    navigationController.pushViewController(targetVC, animated: true)
+                    print("Navigated to HomeScreenViewController")
+                }
+            }
+        } else {
+            print("No UINavigationController found. Presenting modally.")
+
+            let storyboard = UIStoryboard(name: "Main", bundle: nil)
+            if let targetVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {
+                targetVC.modalPresentationStyle = .fullScreen // Ensures it appears properly
+
+                DispatchQueue.main.async {
+                    // Dismiss any existing modal before presenting
+                    topVC.dismiss(animated: false) {
+                        topVC.present(targetVC, animated: true) {
+                            print("Presented HomeScreenViewController modally")
+                        }
+                    }
+                }
+            } else {
+                print("Failed to instantiate HomeScreenViewController")
+            }
+        }
+    }
+
+
+    // Function to get the top-most view controller
+    private func getTopMostViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+              let rootVC = window.rootViewController else {
+            return nil
+        }
+
+        var topVC: UIViewController? = rootVC
+        while let presentedVC = topVC?.presentedViewController {
+            topVC = presentedVC
+        }
+        return topVC
     }
     
     private func redirectToTarget() {

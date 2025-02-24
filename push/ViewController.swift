@@ -18,20 +18,66 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBOutlet weak var txtMobileNumber: UITextField!
     
+    var coachmarkView: UIView!
+    var dottedLineView: UIView!
     let center  = UNUserNotificationCenter.current()
+    var coachmarksData: [(targetView: UIView, title: String, message: String)] = []
+    var currentCoachmarkIndex = 0
+    @IBOutlet weak var btnLogin: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
-        //        let appvar = UIApplication.shared.delegate as! AppDelegate
-        //        AppDelegate.shared.registerForRemoteNotifications()
-        //        UIApplication.shared.registerForRemoteNotifications()
         
         txtName.delegate = self
         txtEmail.delegate = self
         txtIdentity.delegate = self
         txtMobileNumber.delegate = self
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.showCoachmarks()
+        }
+    }
+    
+    func showCoachmarks() {
+        // Define all steps
+        coachmarksData = [
+            (targetView: txtName, title: "Name?", message: "Use this to enter your name"),
+            (targetView: txtEmail, title: "Email?", message: "Use this to enter your email"),
+            (targetView: txtMobileNumber, title: "Mobile Number?", message: "Use this to enter your mobile number"),
+            (targetView: btnLogin, title: "Submit?", message: "Tap this to submit your details")
+        ]
+        
+        currentCoachmarkIndex = 0
+        showNextCoachmark()
+    }
+    
+    func showNextCoachmark() {
+        // If all steps are completed, return
+        if currentCoachmarkIndex >= coachmarksData.count { return }
+        
+        let step = coachmarksData[currentCoachmarkIndex]
+        let coachmark = CoachmarkView(
+            targetView: step.targetView,
+            title: step.title,
+            message: step.message,
+            currentIndex: currentCoachmarkIndex + 1,
+            totalSteps: coachmarksData.count,
+            frame: self.view.bounds
+        )
+        
+        coachmark.onNext = {
+            self.currentCoachmarkIndex += 1
+            self.showNextCoachmark() // Show next step
+        }
+        
+        coachmark.onSkip = {
+            // Skip all remaining steps
+            self.currentCoachmarkIndex = self.coachmarksData.count
+        }
+        
+        self.view.addSubview(coachmark)
     }
     
     @IBAction func btnClickLogin(_ sender: UIButton) {
@@ -53,11 +99,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
         defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
         
         self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
-        
-        //                let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
-        //                let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
-        //                self.navigationController!.pushViewController(vc, animated: true)
-        //                self.present(vc, animated: true)
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         if let homeVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {

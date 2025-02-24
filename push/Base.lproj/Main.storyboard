@@ -63,6 +63,7 @@
                     </view>
                     <navigationItem key="navigationItem" id="MQS-Eu-l5H"/>
                     <connections>
+                        <outlet property="btnLogin" destination="Hq9-QY-wla" id="iWe-Cz-bVi"/>
                         <outlet property="txtEmail" destination="UjZ-QJ-79X" id="6OG-Lc-LdY"/>
                         <outlet property="txtIdentity" destination="w1F-fN-YAP" id="Dwj-3G-mfu"/>
                         <outlet property="txtMobileNumber" destination="RWX-Z5-6Ey" id="2MI-u1-dhf"/>
@@ -128,7 +129,6 @@
         <!--Navigation Controller-->
         <scene sceneID="sV6-Pp-Mrc">
             <objects>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="ZBk-3b-yIk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
                 <navigationController automaticallyAdjustsScrollViewInsets="NO" id="xM1-hx-Ohj" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="4sB-Qm-bvE">
@@ -140,6 +140,7 @@
                         <segue destination="BYZ-38-t0r" kind="relationship" relationship="rootViewController" id="0pp-im-Nhy"/>
                     </connections>
                 </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ZBk-3b-yIk" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="122.90076335877862" y="3.5211267605633805"/>
         </scene>
