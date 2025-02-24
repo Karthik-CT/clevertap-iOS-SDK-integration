@@ -65,17 +65,37 @@ class CoachmarkView: UIView {
 
         configureStepIndicator(in: tooltipView)
 
+//        let startX = targetFrame.midX
+//        let endX = tooltipView.frame.midX
+//        let commonX = (startX + endX) / 2
+//
+//        let startPoint = CGPoint(x: commonX, y: arrowStartY)
+//        let endPoint = CGPoint(x: commonX, y: arrowEndY)
+//
+//        let dottedLineView = DottedLineView(startPoint: startPoint, endPoint: endPoint)
+//        dottedLineView.frame = self.bounds
+//        dottedLineView.isUserInteractionEnabled = false
+//
+//        self.addSubview(dottedLineView)
+        
         let startX = targetFrame.midX
         let endX = tooltipView.frame.midX
         let commonX = (startX + endX) / 2
 
-        let startPoint = CGPoint(x: commonX, y: arrowStartY)
-        let endPoint = CGPoint(x: commonX, y: arrowEndY)
+        let startPoint: CGPoint
+        let endPoint: CGPoint
+
+        if isTargetNearBottom {
+            startPoint = CGPoint(x: commonX, y: tooltipView.frame.maxY - 5) // Start from tooltip bottom
+            endPoint = CGPoint(x: commonX, y: targetFrame.midY) // End at target
+        } else {
+            startPoint = CGPoint(x: commonX, y: targetFrame.maxY + 5) // Start from target bottom
+            endPoint = CGPoint(x: commonX, y: tooltipView.frame.minY) // End at tooltip top
+        }
 
         let dottedLineView = DottedLineView(startPoint: startPoint, endPoint: endPoint)
         dottedLineView.frame = self.bounds
         dottedLineView.isUserInteractionEnabled = false
-
         self.addSubview(dottedLineView)
         
     }

@@ -4,7 +4,6 @@ class DottedLineView: UIView {
     
     private var startPoint: CGPoint
     private var endPoint: CGPoint
-    private let dashedLayer = CAShapeLayer()
     private let yellowDotLayer = CAShapeLayer()
     
     init(startPoint: CGPoint, endPoint: CGPoint) {
@@ -23,13 +22,8 @@ class DottedLineView: UIView {
         
         guard let context = UIGraphicsGetCurrentContext() else { return }
         
-        // Debug: Check if startPoint and endPoint are valid
-        print("Drawing line from \(startPoint) to \(endPoint)")
-        
-        print("Start Point: \(startPoint), End Point: \(endPoint)")
-        
         context.setStrokeColor(UIColor.white.cgColor)
-        context.setLineWidth(4)
+        context.setLineWidth(6)
         
         let dashPattern: [CGFloat] = [6, 3] // 6pt line, 3pt gap
         context.setLineDash(phase: 0, lengths: dashPattern)
@@ -47,19 +41,43 @@ class DottedLineView: UIView {
     private func drawYellowDot() {
         yellowDotLayer.removeFromSuperlayer() // Remove any existing dots
         
-        let circleRadius: CGFloat = 10
+        let circleRadius: CGFloat = 15
+        let targetPoint = shouldPlaceDotAtStartPoint() ? startPoint : endPoint
+        
         let circlePath = UIBezierPath(ovalIn: CGRect(
-            x: endPoint.x - circleRadius / 2,
-            y: endPoint.y - circleRadius / 2,
+            x: targetPoint.x - circleRadius / 2,
+            y: targetPoint.y - circleRadius / 2,
             width: circleRadius,
             height: circleRadius
         ))
         
-        yellowDotLayer.fillColor = UIColor.yellow.cgColor
+        yellowDotLayer.fillColor = UIColor(hex: "#FFD700").cgColor
         yellowDotLayer.path = circlePath.cgPath
         
         self.layer.addSublayer(yellowDotLayer)
     }
+    
+    private func shouldPlaceDotAtStartPoint() -> Bool {
+        guard let superview = self.superview else { return false }
+        let screenHeight = UIScreen.main.bounds.height
+        let bottomThreshold = screenHeight * 0.75 // Adjusted threshold dynamically
+        return endPoint.y > bottomThreshold
+    }
+
 }
 
+extension UIColor {
+    convenience init(hex: String, alpha: CGFloat = 1.0) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
 
+        var rgb: UInt64 = 0
+        Scanner(string: hexSanitized).scanHexInt64(&rgb)
+
+        let red = CGFloat((rgb & 0xFF0000) >> 16) / 255.0
+        let green = CGFloat((rgb & 0x00FF00) >> 8) / 255.0
+        let blue = CGFloat(rgb & 0x0000FF) / 255.0
+
+        self.init(red: red, green: green, blue: blue, alpha: alpha)
+    }
+}
