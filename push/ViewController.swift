@@ -18,6 +18,8 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBOutlet weak var txtMobileNumber: UITextField!
     
+    @IBOutlet weak var txtBottomEditText: UITextField!
+    
     var coachmarkView: UIView!
     var dottedLineView: UIView!
     let center  = UNUserNotificationCenter.current()
@@ -46,7 +48,8 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
             (targetView: txtName, title: "Name?", message: "Use this to enter your name"),
             (targetView: txtEmail, title: "Email?", message: "Use this to enter your email"),
             (targetView: txtMobileNumber, title: "Mobile Number?", message: "Use this to enter your mobile number"),
-            (targetView: btnLogin, title: "Submit?", message: "Tap this to submit your details")
+            (targetView: btnLogin, title: "Submit?", message: "Tap this to submit your details"),
+            (targetView: txtBottomEditText, title: "Bottom text?", message: "Use this to enter your bottom text")
         ]
         
         currentCoachmarkIndex = 0

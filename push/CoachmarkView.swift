@@ -1,10 +1,3 @@
-//
-//  CoachmarkView.swift
-//  push
-//
-//  Created by Karthik Iyer on 24/02/25.
-//
-
 import UIKit
 
 class CoachmarkView: UIView {
@@ -33,7 +26,7 @@ class CoachmarkView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    private func setupView() {
+    private func setupView1() {
         self.backgroundColor = UIColor.black.withAlphaComponent(0.7)
         
         // Highlight target area
@@ -54,6 +47,47 @@ class CoachmarkView: UIView {
         // Add step indicator inside the tooltip view
         configureStepIndicator(in: tooltipView)
     }
+    
+    private func setupView() {
+        self.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        
+        // Create a mask for the target view
+        let path = UIBezierPath(rect: self.bounds)
+        let targetFrame = targetView.convert(targetView.bounds, to: self)
+        let cutoutPath = UIBezierPath(roundedRect: targetFrame.insetBy(dx: -8, dy: -8), cornerRadius: 10)
+        path.append(cutoutPath)
+        path.usesEvenOddFillRule = true
+        
+        let maskLayer = CAShapeLayer()
+        maskLayer.path = path.cgPath
+        maskLayer.fillRule = .evenOdd
+        self.layer.mask = maskLayer
+        
+        // **Fix Spacing Between Tooltip and Target**
+        let spacing: CGFloat = 40  // Ensure proper gap for the arrow
+        let tooltipView = createTooltipView(below: targetFrame.offsetBy(dx: 0, dy: spacing))
+        self.addSubview(tooltipView)
+        
+        // Add step indicator inside tooltip
+        configureStepIndicator(in: tooltipView)
+
+        // **Fix Dotted Line Position & Thickness**
+//        let startPoint = CGPoint(x: targetFrame.midX, y: targetFrame.maxY + 8) // Below Target
+//        let endPoint = CGPoint(x: tooltipView.frame.midX, y: tooltipView.frame.minY - 8) // Above Tooltip
+        
+        let startX = targetFrame.midX
+        let endX = tooltipView.frame.midX
+        let commonX = (startX + endX) / 2  // Ensures alignment along X-axis
+
+        let startPoint = CGPoint(x: commonX, y: targetFrame.maxY + 5) // Below TargetView
+        let endPoint = CGPoint(x: commonX, y: tooltipView.frame.minY - 5) // Above Tooltip
+        
+        let dottedLineView = DottedLineView(startPoint: startPoint, endPoint: endPoint)
+        dottedLineView.frame = self.bounds
+        dottedLineView.isUserInteractionEnabled = false // **Fix Click Issue**
+        self.addSubview(dottedLineView)
+    }
+
     
     override func layoutSubviews() {
         super.layoutSubviews()

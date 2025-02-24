@@ -57,6 +57,12 @@
                                 <nil key="textColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <textField opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="left" contentVerticalAlignment="center" borderStyle="roundedRect" placeholder="Bottom EditText" textAlignment="natural" minimumFontSize="17" translatesAutoresizingMaskIntoConstraints="NO" id="4yB-I9-NI0">
+                                <rect key="frame" x="9" y="784" width="374" height="34"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits"/>
+                            </textField>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
@@ -64,6 +70,7 @@
                     <navigationItem key="navigationItem" id="MQS-Eu-l5H"/>
                     <connections>
                         <outlet property="btnLogin" destination="Hq9-QY-wla" id="iWe-Cz-bVi"/>
+                        <outlet property="txtBottomEditText" destination="4yB-I9-NI0" id="pfT-fO-jWk"/>
                         <outlet property="txtEmail" destination="UjZ-QJ-79X" id="6OG-Lc-LdY"/>
                         <outlet property="txtIdentity" destination="w1F-fN-YAP" id="Dwj-3G-mfu"/>
                         <outlet property="txtMobileNumber" destination="RWX-Z5-6Ey" id="2MI-u1-dhf"/>
