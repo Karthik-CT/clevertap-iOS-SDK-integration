@@ -1,10 +1,3 @@
-//
-//  DottedLineView.swift
-//  push
-//
-//  Created by Karthik Iyer on 24/02/25.
-//
-
 import UIKit
 
 class DottedLineView: UIView {
@@ -32,6 +25,8 @@ class DottedLineView: UIView {
         
         // Debug: Check if startPoint and endPoint are valid
         print("Drawing line from \(startPoint) to \(endPoint)")
+        
+        print("Start Point: \(startPoint), End Point: \(endPoint)")
         
         context.setStrokeColor(UIColor.white.cgColor)
         context.setLineWidth(4)
@@ -66,3 +61,5 @@ class DottedLineView: UIView {
         self.layer.addSublayer(yellowDotLayer)
     }
 }
+
+
