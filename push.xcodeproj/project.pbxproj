@@ -15,6 +15,7 @@
 		4E04D46F294C89CD008F5291 /* NotificationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E04D46E294C89CD008F5291 /* NotificationViewController.swift */; };
 		4E04D472294C89CD008F5291 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4E04D470294C89CD008F5291 /* MainInterface.storyboard */; };
 		4E04D476294C89CD008F5291 /* NotificationContentDemo.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 4E04D468294C89CD008F5291 /* NotificationContentDemo.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4E3731B42D6E236D00625FF1 /* CTTemplates in Frameworks */ = {isa = PBXBuildFile; productRef = 4E3731B32D6E236D00625FF1 /* CTTemplates */; };
 		4EB5CE1829AA823A00F8992F /* HomeScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB5CE1729AA823A00F8992F /* HomeScreenViewController.swift */; };
 		4EBF34962BEB939100A11A4C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4EBF34942BEB939100A11A4C /* Main.storyboard */; };
 		4EF3492D29487F23006F4170 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF3492C29487F23006F4170 /* AppDelegate.swift */; };
@@ -117,6 +118,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2BDAF5D44638EDED5CA19655 /* Pods_push.framework in Frameworks */,
+				4E3731B42D6E236D00625FF1 /* CTTemplates in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,6 +302,9 @@
 				Base,
 			);
 			mainGroup = 4EF3492029487F23006F4170;
+			packageReferences = (
+				4E3731B22D6E236D00625FF1 /* XCRemoteSwiftPackageReference "ct_templates" */,
+			);
 			productRefGroup = 4EF3492A29487F23006F4170 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -830,6 +835,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4E3731B22D6E236D00625FF1 /* XCRemoteSwiftPackageReference "ct_templates" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Karthik-CT/ct_templates.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4E3731B32D6E236D00625FF1 /* CTTemplates */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4E3731B22D6E236D00625FF1 /* XCRemoteSwiftPackageReference "ct_templates" */;
+			productName = CTTemplates;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4EF3492129487F23006F4170 /* Project object */;
 }

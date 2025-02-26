@@ -7,6 +7,7 @@
 
 import UIKit
 import CleverTapSDK
+import CTTemplates
 
 class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     
@@ -18,20 +19,53 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
     
     @IBOutlet weak var txtMobileNumber: UITextField!
     
+    @IBOutlet weak var txtBottomEditText: UITextField!
+    
+    @IBOutlet weak var btnLogin: UIButton!
+    
     let center  = UNUserNotificationCenter.current()
+    
+    var coachmarksData: [(targetView: UIView, title: String, message: String)] = []
+    var currentCoachmarkIndex = 0
     
     override func viewDidLoad() {
         super.viewDidLoad()
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
-        //        let appvar = UIApplication.shared.delegate as! AppDelegate
-        //        AppDelegate.shared.registerForRemoteNotifications()
-        //        UIApplication.shared.registerForRemoteNotifications()
         
         txtName.delegate = self
         txtEmail.delegate = self
         txtIdentity.delegate = self
         txtMobileNumber.delegate = self
+        
+        txtName.accessibilityIdentifier = "txtName"
+        txtEmail.accessibilityIdentifier = "txtEmail"
+        txtMobileNumber.accessibilityIdentifier = "txtMobileNumber"
+        btnLogin.accessibilityIdentifier = "btnLogin"
+        txtBottomEditText.accessibilityIdentifier = "txtBottomEditText"
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.showCoachmarks()
+        }
+    }
+    
+    func showCoachmarks() {
+        let coachmarksJson: [[String: Any]] = [
+            ["targetViewId": "txtName", "title": "Name?", "message": "Use this to enter your name"],
+            ["targetViewId": "txtEmail", "title": "Email?", "message": "Use this to enter your email"],
+            ["targetViewId": "txtMobileNumber", "title": "Mobile Number?", "message": "Use this to enter your mobile number"],
+            ["targetViewId": "btnLogin", "title": "Submit?", "message": "Tap this to submit your details"],
+            ["targetViewId": "txtBottomEditText", "title": "Bottom text?", "message": "Use this to enter your bottom text"]
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: coachmarksJson, options: .prettyPrinted)
+            let jsonString = String(data: jsonData, encoding: .utf8)!
+            CoachmarkManager.shared.showCoachmarks(fromJson: jsonString, in: self.view)
+        } catch {
+            print("Error serializing JSON: \(error)")
+        }
+        
     }
     
     @IBAction func btnClickLogin(_ sender: UIButton) {
@@ -53,11 +87,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
         defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
         
         self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
-        
-        //                let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
-        //                let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
-        //                self.navigationController!.pushViewController(vc, animated: true)
-        //                self.present(vc, animated: true)
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
         if let homeVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {

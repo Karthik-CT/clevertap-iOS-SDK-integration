@@ -1,0 +1,15 @@
+{
+  "originHash" : "3f8a8ca718eba4b8a8f812da571877829b3018602b650c412b8ac8aaf909a49f",
+  "pins" : [
+    {
+      "identity" : "ct_templates",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Karthik-CT/ct_templates.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "a3ca271b3e3ae1799f2bc5aa99793b844216a52d"
+      }
+    }
+  ],
+  "version" : 3
+}
