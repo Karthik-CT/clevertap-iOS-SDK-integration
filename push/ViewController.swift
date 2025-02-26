@@ -9,7 +9,7 @@ import UIKit
 import CleverTapSDK
 import CTTemplates
 
-class ViewController: UIViewController, UNUserNotificationCenterDelegate {
+class ViewController: UIViewController, UNUserNotificationCenterDelegate, CleverTapDisplayUnitDelegate {
     
     @IBOutlet weak var txtName: UITextField!
     
@@ -44,10 +44,30 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
         btnLogin.accessibilityIdentifier = "btnLogin"
         txtBottomEditText.accessibilityIdentifier = "txtBottomEditText"
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.showCoachmarks()
+        CleverTap.sharedInstance()?.setDisplayUnitDelegate(self)
+        
+        CleverTap.sharedInstance()?.recordEvent("coachmarks_nd")
+        
+//        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//            self.showCoachmarks()
+//        }
+    }
+    
+    func displayUnitsUpdated(_ displayUnits: [CleverTapDisplayUnit]) {
+        for unit in displayUnits {
+            prepareDisplayView(unit)
         }
     }
+    
+    // Define this function to handle the display unit processing
+    func prepareDisplayView(_ unit: CleverTapDisplayUnit) {
+        if let jsonData = unit.json {
+            print("Received Display Unit: \(jsonData["custom_kv"])")
+        } else {
+            print("Failed to get JSON data for Display Unit")
+        }
+    }
+    
     
     func showCoachmarks() {
         let coachmarksJson: [[String: Any]] = [
