@@ -11,6 +11,7 @@ class CoachmarkView: UIView {
     var onSkip: (() -> Void)?
     
     private let stepIndicatorLabel = UILabel()
+    private let imageView = UIImageView()
     
     init(targetView: UIView, title: String, message: String, currentIndex: Int, totalSteps: Int, frame: CGRect) {
         self.targetView = targetView
@@ -26,68 +27,6 @@ class CoachmarkView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    private func setupView() {
-        self.backgroundColor = UIColor.black.withAlphaComponent(0.7)
-        
-        let path = UIBezierPath(rect: self.bounds)
-        let targetFrame = targetView.convert(targetView.bounds, to: self)
-        let cutoutPath = UIBezierPath(roundedRect: targetFrame.insetBy(dx: -8, dy: -8), cornerRadius: 10)
-        path.append(cutoutPath)
-        path.usesEvenOddFillRule = true
-        
-        let maskLayer = CAShapeLayer()
-        maskLayer.path = path.cgPath
-        maskLayer.fillRule = .evenOdd
-        self.layer.mask = maskLayer
-        
-        let screenHeight = UIScreen.main.bounds.height
-        let isTargetNearBottom = targetFrame.maxY + 200 > screenHeight // Adjusted threshold
-
-        let tooltipYPosition: CGFloat
-        let arrowStartY: CGFloat
-        let arrowEndY: CGFloat
-        let gap: CGFloat = 40 // **Increased gap between target and tooltip**
-
-        if isTargetNearBottom {
-            // Show tooltip above target
-            tooltipYPosition = targetFrame.minY - 165 - gap // Increased gap
-            arrowStartY = tooltipYPosition + 10
-            arrowEndY = targetFrame.midY - 5
-        } else {
-            // Show tooltip below target
-            tooltipYPosition = targetFrame.maxY + gap // Increased gap
-            arrowStartY = targetFrame.maxY + 5
-            arrowEndY = tooltipYPosition - 5
-        }
-
-        let tooltipView = createTooltipView(atY: tooltipYPosition)
-        self.addSubview(tooltipView)
-
-        configureStepIndicator(in: tooltipView)
-        
-        let startX = targetFrame.midX
-        let endX = tooltipView.frame.midX
-        let commonX = (startX + endX) / 2
-
-        let startPoint: CGPoint
-        let endPoint: CGPoint
-
-        if isTargetNearBottom {
-            startPoint = CGPoint(x: commonX, y: tooltipView.frame.maxY - 5) // Start from tooltip bottom
-            endPoint = CGPoint(x: commonX, y: targetFrame.midY) // End at target
-        } else {
-            startPoint = CGPoint(x: commonX, y: targetFrame.maxY + 5) // Start from target bottom
-            endPoint = CGPoint(x: commonX, y: tooltipView.frame.minY) // End at tooltip top
-        }
-
-        let dottedLineView = DottedLineView(startPoint: startPoint, endPoint: endPoint)
-        dottedLineView.frame = self.bounds
-        dottedLineView.isUserInteractionEnabled = false
-        self.addSubview(dottedLineView)
-        
-    }
-
-
     // Updated Tooltip Positioning
     private func createTooltipView(atY yPosition: CGFloat) -> UIView {
         let tooltipView = UIView(frame: CGRect(x: 20, y: yPosition, width: self.frame.width - 40, height: 145))
@@ -147,7 +86,6 @@ class CoachmarkView: UIView {
         
         return tooltipView
     }
-
     
     private func configureStepIndicator(in tooltipView: UIView) {
         stepIndicatorLabel.text = "\(currentIndex)/\(totalSteps)"
@@ -157,23 +95,153 @@ class CoachmarkView: UIView {
         stepIndicatorLabel.backgroundColor = .clear
         stepIndicatorLabel.translatesAutoresizingMaskIntoConstraints = false
         
-        // Add to the tooltip view
         tooltipView.addSubview(stepIndicatorLabel)
         
-        // Constraints to position at the top-right corner of the tooltip view
         NSLayoutConstraint.activate([
             stepIndicatorLabel.topAnchor.constraint(equalTo: tooltipView.topAnchor, constant: 8),
             stepIndicatorLabel.trailingAnchor.constraint(equalTo: tooltipView.trailingAnchor, constant: -12)
         ])
     }
     
-    @objc private func skipTapped() {
-        onSkip?()
-        self.removeFromSuperview()
+    private func setupView() {
+        self.backgroundColor = UIColor.black.withAlphaComponent(0.7)
+        
+        let path = UIBezierPath(rect: self.bounds)
+        let targetFrame = targetView.convert(targetView.bounds, to: self)
+        
+        let cutoutFrame = targetFrame.insetBy(dx: -8, dy: -8)
+        let cutoutPath = UIBezierPath(roundedRect: cutoutFrame, cornerRadius: 10)
+        path.append(cutoutPath)
+        path.usesEvenOddFillRule = true
+        
+        let maskLayer = CAShapeLayer()
+        maskLayer.path = path.cgPath
+        maskLayer.fillRule = .evenOdd
+        self.layer.mask = maskLayer
+        
+        let cutoutMidX = cutoutFrame.midX
+        let cutoutMidY = cutoutFrame.midY
+        let cutoutTop = cutoutFrame.minY
+        let cutoutBottom = cutoutFrame.maxY
+        let cutoutLeft = cutoutFrame.minX
+        let cutoutRight = cutoutFrame.maxX
+        
+        let screenWidth = UIScreen.main.bounds.width
+        let screenHeight = UIScreen.main.bounds.height
+        
+        let isTargetNearBottom = cutoutBottom + 200 > screenHeight
+        let isTargetNearTop = cutoutTop < 100
+        let isTargetNearLeft = cutoutLeft < screenWidth / 3
+        let isTargetNearRight = cutoutRight > 2 * (screenWidth / 3)
+        
+        let tooltipYPosition: CGFloat
+        let gap: CGFloat = 40
+        
+        if isTargetNearBottom {
+            tooltipYPosition = cutoutTop - 165 - gap
+        } else {
+            tooltipYPosition = cutoutBottom + gap
+        }
+        
+        let tooltipView = createTooltipView(atY: tooltipYPosition)
+        self.addSubview(tooltipView)
+        configureStepIndicator(in: tooltipView)
+        
+        let imageName = getImageForScenario(isTargetNearTop: isTargetNearTop, isTargetNearBottom: isTargetNearBottom, isTargetNearLeft: isTargetNearLeft, isTargetNearRight: isTargetNearRight)
+        
+        var startPoint: CGPoint
+        var endPoint: CGPoint
+        
+        switch imageName {
+        case "img_dashed_coachmark_right_top":
+            startPoint = CGPoint(x: cutoutLeft, y: cutoutMidY)
+            endPoint = CGPoint(x: cutoutLeft - 50, y: cutoutMidY)
+            
+        case "img_dashed_coachmark_left_top", "img_dashed_coachmark_left_bottom":
+            startPoint = CGPoint(x: cutoutRight, y: cutoutMidY)
+            endPoint = CGPoint(x: cutoutRight + 50, y: cutoutMidY)
+            
+        case "img_dashed_coachmark_end_bottom":
+            startPoint = CGPoint(x: cutoutLeft, y: cutoutMidY)
+            endPoint = CGPoint(x: cutoutLeft - 50, y: cutoutMidY)
+            
+        case "img_dashed_coachmark_center":
+            startPoint = CGPoint(x: cutoutMidX, y: cutoutBottom)
+            endPoint = CGPoint(x: cutoutMidX, y: cutoutBottom + 50)
+            
+        case "img_dashed_coachmark_bottom":
+            startPoint = CGPoint(x: cutoutMidX, y: cutoutTop)
+            endPoint = CGPoint(x: cutoutMidX, y: cutoutTop - 50)
+            
+        default:
+            startPoint = CGPoint(x: cutoutMidX, y: cutoutMidY)
+            endPoint = CGPoint(x: cutoutMidX, y: cutoutMidY + 50)
+        }
+        
+        /// 🛠 **Fix Applied:** Lift Y-position for bottom-based cutouts
+        if imageName.contains("bottom"){
+            startPoint.y -= 40
+            endPoint.y -= 40
+        }
+        if imageName.contains("right_top") || imageName.contains("left_top"){
+            startPoint.y += 25
+            endPoint.y += 25
+        }
+        
+        print("Finalized StartPoint: \(startPoint), EndPoint: \(endPoint)")
+        
+        setupDashedLine(startPoint: startPoint, endPoint: endPoint, imageName: imageName)
     }
     
-    @objc private func nextTapped() {
-        onNext?()
-        self.removeFromSuperview()
+    private func getImageForScenario(isTargetNearTop: Bool, isTargetNearBottom: Bool, isTargetNearLeft: Bool, isTargetNearRight: Bool) -> String {
+        if isTargetNearTop {
+            if isTargetNearRight {
+                return "img_dashed_coachmark_right_top"
+            } else if isTargetNearLeft {
+                return "img_dashed_coachmark_left_top"
+            }
+            return "img_dashed_coachmark_top_center"
+        } else if isTargetNearBottom {
+            if isTargetNearLeft {
+                return "img_dashed_coachmark_left_bottom"
+            } else if isTargetNearRight {
+                return "img_dashed_coachmark_end_bottom"
+            }
+            return "img_dashed_coachmark_bottom_center"
+        }
+        return "img_dashed_coachmark_center"
     }
+    
+    private func setupDashedLine(startPoint: CGPoint, endPoint: CGPoint, imageName: String) {
+        let dashedImage = UIImageView(image: UIImage(named: imageName))
+        
+        var imageWidth: CGFloat = 25
+        var imageHeight: CGFloat = 50
+        
+        if imageName.contains("bottom") || imageName.contains("top")   {
+            imageWidth *= 1.6
+            imageHeight *= 1.6
+        }
+        
+        dashedImage.frame = CGRect(x: (startPoint.x + endPoint.x) / 2 - imageWidth / 2, y: (startPoint.y + endPoint.y) / 2 - imageHeight / 2, width: imageWidth, height: imageHeight)
+        
+        self.addSubview(dashedImage)
+        
+        print("✅ Image Loaded Successfully: \(imageName)")
+        print("📌 Image Positioned at: (\(dashedImage.frame.origin.x), \(dashedImage.frame.origin.y))")
+    }
+    
+    private func positionImageBetweenTargetAndCoachmark(startPoint: CGPoint, endPoint: CGPoint) {
+        let imageWidth: CGFloat = 100
+        let imageHeight: CGFloat = 50
+        let midX = (startPoint.x + endPoint.x) / 2
+        let midY = (startPoint.y + endPoint.y) / 2
+        
+        imageView.frame = CGRect(x: midX - (imageWidth / 2), y: midY - (imageHeight / 2), width: imageWidth, height: imageHeight)
+        
+        print("📌 Image Positioned at: (\(midX), \(midY))")
+    }
+    
+    @objc private func skipTapped() { onSkip?(); self.removeFromSuperview() }
+    @objc private func nextTapped() { onNext?(); self.removeFromSuperview() }
 }

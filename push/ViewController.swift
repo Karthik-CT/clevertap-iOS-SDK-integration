@@ -8,20 +8,19 @@
 import UIKit
 import CleverTapSDK
 
-class ViewController: UIViewController, UNUserNotificationCenterDelegate {
+class ViewController: UIViewController, UNUserNotificationCenterDelegate, CleverTapDisplayUnitDelegate {
     
     @IBOutlet weak var txtName: UITextField!
-    
     @IBOutlet weak var txtEmail: UITextField!
-    
     @IBOutlet weak var txtIdentity: UITextField!
-    
     @IBOutlet weak var txtMobileNumber: UITextField!
-    
     @IBOutlet weak var txtBottomEditText: UITextField!
-    
+    @IBOutlet weak var bottomCard: UIView!
+    @IBOutlet weak var iconView: UIStackView!
+    @IBOutlet weak var bellIcon: UIButton!
+    @IBOutlet weak var trashIcon: UIButton!
+    @IBOutlet weak var loginLabel: UILabel!
     var coachmarkView: UIView!
-    var dottedLineView: UIView!
     let center  = UNUserNotificationCenter.current()
     var coachmarksData: [(targetView: UIView, title: String, message: String)] = []
     var currentCoachmarkIndex = 0
@@ -32,55 +31,118 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
         
+        let bottomCard = UIView()
+        bottomCard.translatesAutoresizingMaskIntoConstraints = false
+        bottomCard.backgroundColor = UIColor.systemGray6
+        
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .equalSpacing // This ensures even spacing
+        stackView.alignment = .center
+        stackView.spacing = 0 // No need for manual spacing when using equalSpacing
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Function to create icons
+        func createIcon(named: String) -> UIImageView {
+            let icon = UIImageView(image: UIImage(systemName: named))
+            icon.tintColor = .blue
+            icon.contentMode = .scaleAspectFit
+            icon.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                icon.widthAnchor.constraint(equalToConstant: 30), // Adjust icon size
+                icon.heightAnchor.constraint(equalToConstant: 30)
+            ])
+            return icon
+        }
+
+        // Create icons
+        let homeIcon = createButton(named: "house.fill", action: #selector(homeClicked))
+        let heartIcon = createIcon(named: "heart.fill")
+        let cartIcon = createIcon(named: "cart.fill")
+        let profileIcon = createIcon(named: "person.fill")
+        let settingsIcon = createIcon(named: "gearshape.fill")
+
+        // Add icons to stack view
+        [homeIcon, heartIcon, cartIcon, profileIcon,settingsIcon].forEach { stackView.addArrangedSubview($0) }
+
+        view.addSubview(bottomCard)
+        bottomCard.addSubview(stackView)
+
+        // Fix bottom bar position
+        NSLayoutConstraint.activate([
+            bottomCard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomCard.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomCard.bottomAnchor.constraint(equalTo: view.bottomAnchor), // Stick to bottom
+            bottomCard.heightAnchor.constraint(equalToConstant: 80)
+        ])
+
+        // Center stack view within bottom bar
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: bottomCard.leadingAnchor, constant: 30), // Ensure proper spacing
+            stackView.trailingAnchor.constraint(equalTo: bottomCard.trailingAnchor, constant: -30),
+            stackView.centerYAnchor.constraint(equalTo: bottomCard.centerYAnchor)
+        ])
+
         txtName.delegate = self
         txtEmail.delegate = self
         txtIdentity.delegate = self
         txtMobileNumber.delegate = self
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            self.showCoachmarks()
+        txtName.accessibilityIdentifier = "txtName"
+        txtEmail.accessibilityIdentifier = "txtEmail"
+        txtMobileNumber.accessibilityIdentifier = "txtMobileNumber"
+        btnLogin.accessibilityIdentifier = "btnLogin"
+        txtBottomEditText.accessibilityIdentifier = "txtBottomEditText"
+        homeIcon.accessibilityIdentifier = "homeIcon"
+        profileIcon.accessibilityIdentifier = "profileIcon"
+        heartIcon.accessibilityIdentifier = "heartIcon"
+        settingsIcon.accessibilityIdentifier = "settingsIcon"
+        bellIcon.accessibilityIdentifier = "bellIcon"
+        trashIcon.accessibilityIdentifier = "trashIcon"
+        loginLabel.accessibilityIdentifier = "loginLabel"
+        
+        CleverTap.sharedInstance()?.setDisplayUnitDelegate(self)
+    }
+    
+    
+    @objc func homeClicked() {
+        print("Home icon clicked")
+    }
+    
+    func createButton(named: String, action: Selector) -> UIButton {
+        let button = UIButton(type: .system)
+        let icon = UIImage(systemName: named)?.withRenderingMode(.alwaysTemplate)
+        button.setImage(icon, for: .normal)
+        button.tintColor = .blue
+        button.addTarget(self, action: action, for: .touchUpInside) // Attach action
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 40), // Adjust button size
+            button.heightAnchor.constraint(equalToConstant: 40)
+        ])
+        return button
+    }
+
+    func displayUnitsUpdated(_ displayUnits: [CleverTapDisplayUnit]) {
+        for unit in displayUnits {
+            prepareDisplayView(unit)
         }
     }
     
-    func showCoachmarks() {
-        // Define all steps
-        coachmarksData = [
-            (targetView: txtName, title: "Name?", message: "Use this to enter your name"),
-            (targetView: txtEmail, title: "Email?", message: "Use this to enter your email"),
-            (targetView: txtMobileNumber, title: "Mobile Number?", message: "Use this to enter your mobile number"),
-            (targetView: btnLogin, title: "Submit?", message: "Tap this to submit your details"),
-            (targetView: txtBottomEditText, title: "Bottom text?", message: "Use this to enter your bottom text")
-        ]
-        
-        currentCoachmarkIndex = 0
-        showNextCoachmark()
+    // Define this function to handle the display unit processing
+    func prepareDisplayView(_ unit: CleverTapDisplayUnit) {
+        if let jsonData = unit.json {
+            print("Received Display Unit: \(String(describing: jsonData["custom_kv"]))")
+        } else {
+            print("Failed to get JSON data for Display Unit")
+        }
     }
     
-    func showNextCoachmark() {
-        // If all steps are completed, return
-        if currentCoachmarkIndex >= coachmarksData.count { return }
-        
-        let step = coachmarksData[currentCoachmarkIndex]
-        let coachmark = CoachmarkView(
-            targetView: step.targetView,
-            title: step.title,
-            message: step.message,
-            currentIndex: currentCoachmarkIndex + 1,
-            totalSteps: coachmarksData.count,
-            frame: self.view.bounds
-        )
-        
-        coachmark.onNext = {
-            self.currentCoachmarkIndex += 1
-            self.showNextCoachmark() // Show next step
+    @IBAction func goToCoachmarkScreen(_ sender: UIButton) {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let coachmarkVC = storyboard.instantiateViewController(withIdentifier: "CoachmarkScreenViewController") as? CoachmarkScreenViewController {
+            // Push the HomeScreenViewController
+            self.navigationController?.pushViewController(coachmarkVC, animated: true)
         }
-        
-        coachmark.onSkip = {
-            // Skip all remaining steps
-            self.currentCoachmarkIndex = self.coachmarksData.count
-        }
-        
-        self.view.addSubview(coachmark)
     }
     
     @IBAction func btnClickLogin(_ sender: UIButton) {
@@ -108,7 +170,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
             // Push the HomeScreenViewController
             self.navigationController?.pushViewController(homeVC, animated: true)
         }
-        
     }
     
     @IBAction func btnLoginClicked(_ sender: UIButton) {
@@ -175,7 +236,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate {
             toastLabel.removeFromSuperview()
         })
     }
-    
 }
 
 extension ViewController : UITextFieldDelegate {
