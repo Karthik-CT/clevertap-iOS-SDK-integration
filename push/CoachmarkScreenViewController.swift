@@ -93,7 +93,7 @@ class CoachmarkScreenViewController: UIViewController, CleverTapDisplayUnitDeleg
         profileImage.sd_setImage(with: URL(string: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"))
         bannerImage.sd_setImage(with: URL(string: "https://github.com/Karthik-CT/image-gallery/blob/main/Banner/burger_banner.png?raw=true"))
     }
-
+    
     
     private func setupCardViews() {
         let categoryImages = [
@@ -123,11 +123,11 @@ class CoachmarkScreenViewController: UIViewController, CleverTapDisplayUnitDeleg
         cardView.applyCardStyle()
         imageView.sd_setImage(with: URL(string: imageUrl))
     }
-
+    
     @objc func homeClicked() {
         print("Home icon clicked")
     }
-
+    
     private func createButton(named: String, action: Selector) -> UIButton {
         let button = UIButton(type: .system)
         let icon = UIImage(systemName: named)?.withRenderingMode(.alwaysTemplate)
@@ -140,7 +140,7 @@ class CoachmarkScreenViewController: UIViewController, CleverTapDisplayUnitDeleg
         ])
         return button
     }
-
+    
     private func createIcon(named: String) -> UIImageView {
         let icon = UIImageView(image: UIImage(systemName: named))
         icon.tintColor = .black

@@ -9,16 +9,30 @@ class CoachmarkView: UIView {
     var totalSteps: Int
     var onNext: (() -> Void)?
     var onSkip: (() -> Void)?
+    var positiveButtonText: String
+    var skipButtonText: String
+    var positiveButtonBackgroundColor: String
+    var skipButtonBackgroundColor: String
+    var positiveButtonTextColor: String
+    var skipButtonTextColor: String
+    var finalButtonText: String
     
     private let stepIndicatorLabel = UILabel()
     private let imageView = UIImageView()
     
-    init(targetView: UIView, title: String, message: String, currentIndex: Int, totalSteps: Int, frame: CGRect) {
+    init(targetView: UIView, title: String, message: String, currentIndex: Int, totalSteps: Int, frame: CGRect, positiveButtonText: String, skipButtonText: String, positiveButtonBackgroundColor: String,skipButtonBackgroundColor: String, positiveButtonTextColor: String, skipButtonTextColor: String, finalButtonText: String) {
         self.targetView = targetView
         self.title = title
         self.message = message
         self.currentIndex = currentIndex
         self.totalSteps = totalSteps
+        self.positiveButtonText = positiveButtonText
+        self.skipButtonText = skipButtonText
+        self.positiveButtonBackgroundColor = positiveButtonBackgroundColor
+        self.skipButtonBackgroundColor = skipButtonBackgroundColor
+        self.positiveButtonTextColor = positiveButtonTextColor
+        self.skipButtonTextColor = skipButtonTextColor
+        self.finalButtonText = finalButtonText
         super.init(frame: frame)
         setupView()
     }
@@ -58,19 +72,35 @@ class CoachmarkView: UIView {
         
         let skipButton = UIButton(type: .system)
         var skipConfig = UIButton.Configuration.filled()
-        skipConfig.baseBackgroundColor = UIColor.lightGray.withAlphaComponent(0.3)
-        skipConfig.baseForegroundColor = .black
+        skipConfig.baseBackgroundColor = UIColor(hex: skipButtonBackgroundColor)?.withAlphaComponent(0.3)
+        skipConfig.baseForegroundColor = UIColor(hex: skipButtonTextColor)
         skipConfig.cornerStyle = .medium
-        skipConfig.title = "Skip"
+        skipConfig.title = skipButtonText
         skipButton.configuration = skipConfig
         skipButton.addTarget(self, action: #selector(skipTapped), for: .touchUpInside)
+        skipButton.layer.borderColor = UIColor.black.cgColor // Change color as needed
+        skipButton.layer.borderWidth = 1.5
+        skipButton.layer.cornerRadius = 8
+        skipButton.layer.shadowColor = UIColor.black.cgColor
+        skipButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+        skipButton.layer.shadowRadius = 4
+        skipButton.layer.shadowOpacity = 0.3
+        skipButton.layer.masksToBounds = false
         
         let nextButton = UIButton(type: .system)
-        nextButton.setTitle(currentIndex == totalSteps ? "Ready to Explore" : "Next", for: .normal)
-        nextButton.setTitleColor(.white, for: .normal)
-        nextButton.backgroundColor = .red
+        nextButton.setTitle(currentIndex == totalSteps ? finalButtonText : positiveButtonText, for: .normal)
+        nextButton.setTitleColor(UIColor(hex: positiveButtonTextColor), for: .normal)
+        nextButton.backgroundColor = UIColor(hex: positiveButtonBackgroundColor)
         nextButton.layer.cornerRadius = 5
         nextButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
+        nextButton.layer.borderColor = UIColor.red.cgColor // Change color as needed
+        nextButton.layer.borderWidth = 1.5
+        nextButton.layer.cornerRadius = 8
+        nextButton.layer.shadowColor = UIColor.red.cgColor
+        nextButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+        nextButton.layer.shadowRadius = 4
+        nextButton.layer.shadowOpacity = 0.3
+        nextButton.layer.masksToBounds = false
         
         buttonsContainer.addArrangedSubview(skipButton)
         buttonsContainer.addArrangedSubview(nextButton)
@@ -244,4 +274,20 @@ class CoachmarkView: UIView {
     
     @objc private func skipTapped() { onSkip?(); self.removeFromSuperview() }
     @objc private func nextTapped() { onNext?(); self.removeFromSuperview() }
+}
+
+extension UIColor {
+    convenience init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+        
+        var rgb: UInt64 = 0
+        Scanner(string: hexSanitized).scanHexInt64(&rgb)
+        
+        let red = CGFloat((rgb >> 16) & 0xFF) / 255.0
+        let green = CGFloat((rgb >> 8) & 0xFF) / 255.0
+        let blue = CGFloat(rgb & 0xFF) / 255.0
+        
+        self.init(red: red, green: green, blue: blue, alpha: 1.0)
+    }
 }
