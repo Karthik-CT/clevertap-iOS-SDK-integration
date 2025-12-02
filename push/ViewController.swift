@@ -8,7 +8,7 @@
 import UIKit
 import CleverTapSDK
 
-class ViewController: UIViewController, UNUserNotificationCenterDelegate, CleverTapDisplayUnitDelegate {
+class ViewController: UIViewController, UNUserNotificationCenterDelegate, CleverTapDisplayUnitDelegate, CleverTapInboxViewControllerDelegate {
     
     @IBOutlet weak var txtName: UITextField!
     @IBOutlet weak var txtEmail: UITextField!
@@ -25,11 +25,19 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
     var coachmarksData: [(targetView: UIView, title: String, message: String)] = []
     var currentCoachmarkIndex = 0
     @IBOutlet weak var btnLogin: UIButton!
+    let isLoggedInKey = "isLoggedIn"
     
     override func viewDidLoad() {
         super.viewDidLoad()
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(3)
+        
+        //Initialize the CleverTap App Inbox
+        CleverTap.sharedInstance()?.initializeInbox(callback: ({ (success) in
+            let messageCount = CleverTap.sharedInstance()?.getInboxMessageCount()
+            let unreadCount = CleverTap.sharedInstance()?.getInboxMessageUnreadCount()
+            print("Inbox Message:\(String(describing: messageCount))/\(String(describing: unreadCount)) unread")
+        }))
         
         let bottomCard = UIView()
         bottomCard.translatesAutoresizingMaskIntoConstraints = false
@@ -41,7 +49,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         stackView.alignment = .center
         stackView.spacing = 0 // No need for manual spacing when using equalSpacing
         stackView.translatesAutoresizingMaskIntoConstraints = false
-
+        
         // Function to create icons
         func createIcon(named: String) -> UIImageView {
             let icon = UIImageView(image: UIImage(systemName: named))
@@ -54,20 +62,20 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             ])
             return icon
         }
-
+        
         // Create icons
         let homeIcon = createButton(named: "house.fill", action: #selector(homeClicked))
         let heartIcon = createIcon(named: "heart.fill")
         let cartIcon = createIcon(named: "cart.fill")
         let profileIcon = createIcon(named: "person.fill")
         let settingsIcon = createIcon(named: "gearshape.fill")
-
+        
         // Add icons to stack view
         [homeIcon, heartIcon, cartIcon, profileIcon,settingsIcon].forEach { stackView.addArrangedSubview($0) }
-
+        
         view.addSubview(bottomCard)
         bottomCard.addSubview(stackView)
-
+        
         // Fix bottom bar position
         NSLayoutConstraint.activate([
             bottomCard.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -75,14 +83,14 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             bottomCard.bottomAnchor.constraint(equalTo: view.bottomAnchor), // Stick to bottom
             bottomCard.heightAnchor.constraint(equalToConstant: 80)
         ])
-
+        
         // Center stack view within bottom bar
         NSLayoutConstraint.activate([
             stackView.leadingAnchor.constraint(equalTo: bottomCard.leadingAnchor, constant: 30), // Ensure proper spacing
             stackView.trailingAnchor.constraint(equalTo: bottomCard.trailingAnchor, constant: -30),
             stackView.centerYAnchor.constraint(equalTo: bottomCard.centerYAnchor)
         ])
-
+        
         txtName.delegate = self
         txtEmail.delegate = self
         txtIdentity.delegate = self
@@ -121,7 +129,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         ])
         return button
     }
-
+    
     func displayUnitsUpdated(_ displayUnits: [CleverTapDisplayUnit]) {
         for unit in displayUnits {
             prepareDisplayView(unit)
@@ -138,15 +146,33 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
     }
     
     @IBAction func goToCoachmarkScreen(_ sender: UIButton) {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        if let coachmarkVC = storyboard.instantiateViewController(withIdentifier: "CoachmarkScreenViewController") as? CoachmarkScreenViewController {
-            // Push the HomeScreenViewController
-            self.navigationController?.pushViewController(coachmarkVC, animated: true)
+        
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            if settings.authorizationStatus != .authorized {
+                DispatchQueue.main.async {
+                    self.redirectToSettings()
+                }
+            }
+        }
+    }
+    
+    func redirectToSettings() {
+        if let appSettings = URL(string: UIApplication.openSettingsURLString) {
+            if UIApplication.shared.canOpenURL(appSettings) {
+                UIApplication.shared.open(appSettings, options: [:], completionHandler: nil)
+            }
         }
     }
     
     @IBAction func btnClickLogin(_ sender: UIButton) {
-        let profile: Dictionary<String, Any> = [
+        //        let dob = getModifiedDOBWithYearFixed(currentDOB: -2108217070000)
+        //        print("PrintDobTS: \(dob)")
+//        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
+//        print("PrintVar: \(printVar)")
+        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
+        print("PrintVar: \(dateObject)")
+        
+        var profile: Dictionary<String, Any> = [
             "Name": txtName.text!,
             "Identity": txtIdentity.text!,
             "Email": txtEmail.text!,
@@ -154,9 +180,20 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "MSG-email": true,
             "MSG-push": true,
             "MSG-sms": true,
-            "MSG-whatsapp": true
+            "MSG-whatsapp": true,
+//            "DOB": printVar
+            "DOB": "$D_\(dateObject)"
         ]
         CleverTap.sharedInstance()?.onUserLogin(profile)
+//                CleverTap.sharedInstance()?.profilePush(profile)
+        
+        UserDefaults.standard.set(true, forKey: isLoggedInKey)
+        UserDefaults.standard.synchronize()
+        
+        CleverTap.sharedInstance()?.recordEvent("LoggedIn", withProps: [
+            "emailID": txtEmail.text!,
+            "identity": txtIdentity.text!
+        ] as [String : Any])
         
         let defaults = UserDefaults(suiteName: "group.clevertapTest")
         defaults!.set(txtEmail.text!, forKey: "userEmailID")
@@ -170,6 +207,37 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             // Push the HomeScreenViewController
             self.navigationController?.pushViewController(homeVC, animated: true)
         }
+    }
+    
+    func getModifiedDOBWithYearFixed(currentDOB: Int64) -> Int64 {
+        // Convert epoch milliseconds to Date
+        let originalDate = Date(timeIntervalSince1970: TimeInterval(currentDOB) / 1000)
+        
+        // Extract components from the original date
+        let calendar = Calendar(identifier: .gregorian)
+        let components = calendar.dateComponents(in: TimeZone(secondsFromGMT: 0)!, from: originalDate)
+        
+        // Replace year with 2023
+        var modifiedComponents = DateComponents()
+        modifiedComponents.year = 2023
+        modifiedComponents.month = components.month
+        modifiedComponents.day = components.day
+        modifiedComponents.hour = components.hour
+        modifiedComponents.minute = components.minute
+        modifiedComponents.second = components.second
+        
+        // Convert back to Date in system time zone
+        let localTimeZone = TimeZone.current
+        let modifiedDate = calendar.date(from: modifiedComponents)!
+        
+        // Adjust to local timezone
+        let secondsFromGMT = TimeInterval(localTimeZone.secondsFromGMT(for: modifiedDate))
+        let localDate = modifiedDate.addingTimeInterval(secondsFromGMT)
+        
+        // Convert to milliseconds since 1970
+        let modifiedEpochTime = Int64(localDate.timeIntervalSince1970 * 1000)
+        
+        return modifiedEpochTime
     }
     
     @IBAction func btnLoginClicked(_ sender: UIButton) {
@@ -236,6 +304,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             toastLabel.removeFromSuperview()
         })
     }
+    
 }
 
 extension ViewController : UITextFieldDelegate {

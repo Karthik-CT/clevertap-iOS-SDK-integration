@@ -6,6 +6,7 @@
 #import "CTInAppStore.h"
 #endif
 #import "CTSessionManager.h"
+#import "CTCryptMigrator.h"
 
 @class CTInAppDisplayManager;
 @class CTFileDownloader;
@@ -31,11 +32,14 @@ typedef NS_ENUM(NSInteger, CleverTapEventType) {
 @property (nonatomic, strong, readonly) CTImpressionManager * _Nullable impressionManager;
 @property (nonatomic, assign, readonly) BOOL isAppForeground;
 @property (nonatomic, strong, readonly) CTDeviceInfo * _Nonnull deviceInfo;
+@property (nonatomic, strong, readonly) CTCryptMigrator * _Nonnull cryptMigrator;
 @property (atomic, strong, readonly) CTSessionManager * _Nonnull sessionManager;
 @property (nonatomic, strong, readonly) CTCustomTemplatesManager * _Nullable customTemplatesManager;
 #endif
 
 @property (nonatomic, strong, readonly) CTFileDownloader * _Nullable fileDownloader;
+
+@property (atomic, assign, readonly) BOOL isUserSwitching;
 
 + (NSMutableDictionary<NSString *, CleverTap *> * _Nullable)getInstances;
 

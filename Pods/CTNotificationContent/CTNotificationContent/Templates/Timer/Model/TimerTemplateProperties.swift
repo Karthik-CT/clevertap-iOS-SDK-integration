@@ -17,14 +17,20 @@ struct TimerTemplateProperties: Decodable {
     let pt_big_img: String?
     let pt_big_img_alt: String?
     let pt_bg: String?
+    let pt_bg_dark: String?
     let pt_chrono_title_clr: String?
+    let pt_chrono_title_clr_dark: String?
     let pt_timer_threshold: Int?
     let pt_timer_end: Int?
     let pt_title_clr: String?
+    let pt_title_clr_dark: String?
     let pt_msg_clr: String?
+    let pt_msg_clr_dark: String?
+    let pt_big_img_alt_text: String?
+    let pt_big_img_alt_alt_text: String?
     
     enum CodingKeys: String, CodingKey {
-        case pt_title, pt_title_alt, pt_msg, pt_msg_alt, pt_msg_summary, pt_dl1, pt_big_img, pt_big_img_alt, pt_bg, pt_chrono_title_clr, pt_timer_threshold, pt_timer_end, pt_title_clr, pt_msg_clr
+        case pt_title, pt_title_alt, pt_msg, pt_msg_alt, pt_msg_summary, pt_dl1, pt_big_img, pt_big_img_alt, pt_bg, pt_bg_dark, pt_chrono_title_clr, pt_chrono_title_clr_dark, pt_timer_threshold, pt_timer_end, pt_title_clr, pt_title_clr_dark, pt_msg_clr, pt_msg_clr_dark, pt_big_img_alt_text, pt_big_img_alt_alt_text
     }
 
     init(from decoder: Decoder) throws {
@@ -39,9 +45,15 @@ struct TimerTemplateProperties: Decodable {
         pt_big_img = try container.decodeIfPresent(String.self, forKey: .pt_big_img)
         pt_big_img_alt = try container.decodeIfPresent(String.self, forKey: .pt_big_img_alt)
         pt_bg = try container.decodeIfPresent(String.self, forKey: .pt_bg)
+        pt_bg_dark = try container.decodeIfPresent(String.self, forKey: .pt_bg_dark)
         pt_chrono_title_clr = try container.decodeIfPresent(String.self, forKey: .pt_chrono_title_clr)
+        pt_chrono_title_clr_dark = try container.decodeIfPresent(String.self, forKey: .pt_chrono_title_clr_dark)
         pt_title_clr = try container.decodeIfPresent(String.self, forKey: .pt_title_clr)
         pt_msg_clr = try container.decodeIfPresent(String.self, forKey: .pt_msg_clr)
+        pt_title_clr_dark = try container.decodeIfPresent(String.self, forKey: .pt_title_clr_dark)
+        pt_msg_clr_dark = try container.decodeIfPresent(String.self, forKey: .pt_msg_clr_dark)
+        pt_big_img_alt_text = try container.decodeIfPresent(String.self, forKey: .pt_big_img_alt_text)
+        pt_big_img_alt_alt_text = try container.decodeIfPresent(String.self, forKey: .pt_big_img_alt_alt_text)
         
         // Value for pt_timer_threshold and pt_timer_end key can be Int or String if received from JSON data or individual keys respectively, so checked for both case if present or else nil.
         var thresholdValue: Int? = nil

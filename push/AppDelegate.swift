@@ -14,32 +14,146 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     let center  = UNUserNotificationCenter.current()
     var window: UIWindow?
     var lastHandledURL: URL?
+    let isLoggedInKey = "isLoggedIn"
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        //                CleverTap.autoIntegrate()
+        CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
         
+        Logger(subsystem: "app", category: "debug")
+            .log("User ID: \(userId, privacy: .public)")
+        
+        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
+        print("PrintVar: \(printVar)")
+//        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
+//        print("PrintVar: \(dateObject)")
+        var profile: Dictionary<String, Any> = [
+            "DOB": printVar
+        ]
+        CleverTap.sharedInstance()?.onUserLogin(profile)
+        
+        printUserDefaults()
+        //        clearIdentityErrorIssue()
+        
         registerForPush()
-        CleverTap.sharedInstance()?.enableDeviceNetworkInfoReporting(true)
+        //        CleverTap.sharedInstance()?.enableDeviceNetworkInfoReporting(true)
         
         UNUserNotificationCenter.current().delegate = self
         
         CleverTap.sharedInstance()?.setUrlDelegate(self)
         CleverTap.sharedInstance()?.setPushNotificationDelegate(self)
-        // Create your root view controller (e.g., ViewController)
-        let rootViewController = ViewController() // Replace with your actual root view controller
-        
-        // Wrap the root view controller in a UINavigationController
-        let navigationController = UINavigationController(rootViewController: rootViewController)
-        
-        // Set the root view controller as the UINavigationController
-        window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = navigationController
-        window?.makeKeyAndVisible()
+        //        // Create your root view controller (e.g., ViewController)
+        //        let rootViewController = ViewController() // Replace with your actual root view controller
+        //
+        //        // Wrap the root view controller in a UINavigationController
+        //        let navigationController = UINavigationController(rootViewController: rootViewController)
+        //
+        //        // Set the root view controller as the UINavigationController
+        //        window = UIWindow(frame: UIScreen.main.bounds)
+        //        window?.rootViewController = navigationController
+        //        window?.makeKeyAndVisible()
         
         return true
+    }
+    
+    func getModifiedDOBWithYearFixed(currentDOB: Int64) -> Int64 {
+        // Convert epoch milliseconds to Date
+        let originalDate = Date(timeIntervalSince1970: TimeInterval(currentDOB) / 1000)
+        
+        // Extract components from the original date
+        let calendar = Calendar(identifier: .gregorian)
+        let components = calendar.dateComponents(in: TimeZone(secondsFromGMT: 0)!, from: originalDate)
+        
+        // Replace year with 2023
+        var modifiedComponents = DateComponents()
+        modifiedComponents.year = 2023
+        modifiedComponents.month = components.month
+        modifiedComponents.day = components.day
+        modifiedComponents.hour = components.hour
+        modifiedComponents.minute = components.minute
+        modifiedComponents.second = components.second
+        
+        // Convert back to Date in system time zone
+        let localTimeZone = TimeZone.current
+        let modifiedDate = calendar.date(from: modifiedComponents)!
+        
+        // Adjust to local timezone
+        let secondsFromGMT = TimeInterval(localTimeZone.secondsFromGMT(for: modifiedDate))
+        let localDate = modifiedDate.addingTimeInterval(secondsFromGMT)
+        
+        // Convert to milliseconds since 1970
+        let modifiedEpochTime = Int64(localDate.timeIntervalSince1970 * 1000)
+        
+        return modifiedEpochTime
+    }
+    
+    func printUserDefaults() {
+        let dictionary = UserDefaults.standard.dictionaryRepresentation()
+        for (key, value) in dictionary {
+            print("UserDefault: \(key): \(value)")
+        }
+    }
+    
+    func clearIdentityErrorIssue() {
+        let defaults = UserDefaults.standard
+        let cacheKey = "WizRocketTEST-W8W-6WR-846Z:CachedGUIDS"
+        
+        if let cachedGuids = defaults.dictionary(forKey: cacheKey) as? [String: String] {
+            print("Cached GUIDS:", cachedGuids)
+            
+            // Separate Identity_ and Email_ values
+            var identityIDs: [String] = []
+            var emailIDs: [String] = []
+            
+            for (key, value) in cachedGuids {
+                if key.starts(with: "Identity_") {
+                    identityIDs.append(value)
+                } else if key.starts(with: "Email_") {
+                    emailIDs.append(value)
+                }
+            }
+            
+            var shouldClear = false
+            
+            // 1️⃣ Check duplicate Identity_ values
+            if Set(identityIDs).count != identityIDs.count {
+                print("⚠️ Duplicate Identity_ values found")
+                shouldClear = true
+            }
+            
+            // 2️⃣ Check duplicate Email_ values
+            if Set(emailIDs).count != emailIDs.count {
+                print("⚠️ Duplicate Email_ values found")
+                shouldClear = true
+            }
+            
+            // 3️⃣ Clear CleverTap-related UserDefaults if any duplicates
+            if shouldClear {
+                print("⚠️ Duplicates detected. Clearing all CleverTap-related UserDefaults...")
+                
+                let allKeys = Array(defaults.dictionaryRepresentation().keys)
+                let clevertapKeys = allKeys.filter {
+                    $0.localizedCaseInsensitiveContains("clevertap") ||
+                    $0.localizedCaseInsensitiveContains("wzrk") ||
+                    $0.localizedCaseInsensitiveContains("wizrocket")
+                }
+                print("⚠️ clevertapKeys: \(clevertapKeys)")
+                for key in clevertapKeys {
+                    defaults.removeObject(forKey: key)
+                    print("Removed:", key)
+                }
+                
+                defaults.synchronize()
+                print("✅ All CleverTap-related UserDefaults cleared.")
+            } else {
+                print("✅ No duplicates found. CachedGUIDS retained.")
+            }
+            
+        } else {
+            print("ℹ️ No CachedGUIDS found.")
+        }
     }
     
     func registerForPush() {
@@ -57,10 +171,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             if granted {
                 DispatchQueue.main.async {
                     UIApplication.shared.registerForRemoteNotifications()
+                    print("Push: if block enter")
+                }
+            }
+            else {
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                    print("Push: else block enter")
                 }
             }
         })
-        
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -70,7 +190,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         NSLog("%@: registered for remote notifications: %@", self.description, deviceToken.debugDescription)
         //  Manual Implementation of Push
-        CleverTap.sharedInstance()?.setPushToken(deviceToken as Data)
+        //        CleverTap.sharedInstance()?.setPushToken(deviceToken as Data)
     }
     
     //Background
@@ -132,12 +252,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     private func redirectToTarget2() {
         print("Redirecting to target...")
-
+        
         guard let topVC = getTopMostViewController() else {
             print("Top-most view controller not found")
             return
         }
-
+        
         if let navigationController = topVC.navigationController {
             print("Navigation Controller found")
             if !(navigationController.topViewController is HomeScreenViewController) {
@@ -149,11 +269,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             }
         } else {
             print("No UINavigationController found. Presenting modally.")
-
+            
             let storyboard = UIStoryboard(name: "Main", bundle: nil)
             if let targetVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {
                 targetVC.modalPresentationStyle = .fullScreen // Ensures it appears properly
-
+                
                 DispatchQueue.main.async {
                     // Dismiss any existing modal before presenting
                     topVC.dismiss(animated: false) {
@@ -167,8 +287,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             }
         }
     }
-
-
+    
+    
     // Function to get the top-most view controller
     private func getTopMostViewController() -> UIViewController? {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -176,7 +296,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
               let rootVC = window.rootViewController else {
             return nil
         }
-
+        
         var topVC: UIViewController? = rootVC
         while let presentedVC = topVC?.presentedViewController {
             topVC = presentedVC

@@ -96,6 +96,9 @@ static NSArray *registeredURLSchemes;
         
         _handshakeDomain = [CTPlistInfo getMetaDataForAttribute:CLTAP_HANDSHAKE_DOMAIN];
         
+        NSString *encryptionInTransitEnabled = [CTPlistInfo getMetaDataForAttribute:CLTAP_ENCRYPTION_IN_TRANSIT_ENABLED];
+        _encryptionInTransitEnabled = (encryptionInTransitEnabled && [encryptionInTransitEnabled isEqualToString:@"1"]);
+        
         NSString *encryptionLevel = [CTPlistInfo getMetaDataForAttribute:CLTAP_ENCRYPTION_LEVEL];
         [self setEncryption:encryptionLevel];
     }
@@ -119,6 +122,14 @@ static NSArray *registeredURLSchemes;
     _accountToken = token;
     _proxyDomain = proxyDomain;
     _spikyProxyDomain = spikyProxyDomain;
+}
+
+- (void)setCredentialsWithAccountID:(NSString * _Nonnull)accountID token:(NSString * _Nonnull)token proxyDomain:(NSString * _Nonnull)proxyDomain spikyProxyDomain:(NSString * _Nullable)spikyProxyDomain handshakeDomain:(NSString*)handshakeDomain {
+    _accountId = accountID;
+    _accountToken = token;
+    _proxyDomain = proxyDomain;
+    _spikyProxyDomain = spikyProxyDomain;
+    _handshakeDomain = handshakeDomain;
 }
 
 - (void)setEncryption:(NSString *)encryptionLevel {

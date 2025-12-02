@@ -14,9 +14,16 @@ import UserNotificationsUI
     @objc public var templateSubcaption: String = ""
     @objc public var deeplinkURL: String = ""
     @objc public var isFromProductDisplay: Bool = false
+
     var bgColor: String = ConstantKeys.kDefaultColor
     var captionColor: String = ConstantKeys.kHexBlackColor
     var subcaptionColor: String = ConstantKeys.kHexLightGrayColor
+    
+    // Dark mode colors
+    var bgColorDark: String = ConstantKeys.kDefaultColorDark
+    var captionColorDark: String = ConstantKeys.kHexWhiteColor
+    var subcaptionColorDark: String = ConstantKeys.kHexDarkGrayColor
+
     var jsonContent: CarouselProperties? = nil
     var nextButtonImage: UIImage = UIImage()
     var previousButtonImage: UIImage = UIImage()
@@ -34,6 +41,15 @@ import UserNotificationsUI
         
         jsonContent = CTUtiltiy.loadContentData(data: data)
         createView()
+        
+        // Register for trait changes on iOS 17+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+                if self.traitCollection.userInterfaceStyle != previousTraitCollection.userInterfaceStyle {
+                    self.updateContentViewBackground()
+                }
+            }
+        }
     }
     
     func createView() {
@@ -61,31 +77,43 @@ import UserNotificationsUI
         if let msgColor = jsonContent.pt_msg_clr, !msgColor.isEmpty {
             subcaptionColor = msgColor
         }
+
+        // Handle dark mode colors
+        if let bgDark = jsonContent.pt_bg_dark, !bgDark.isEmpty {
+            bgColorDark = bgDark
+        }
+        if let titleColorDark = jsonContent.pt_title_clr_dark, !titleColorDark.isEmpty {
+            captionColorDark = titleColorDark
+        }
+        if let msgColorDark = jsonContent.pt_msg_clr_dark, !msgColorDark.isEmpty {
+            subcaptionColorDark = msgColorDark
+        }
         var actionUrl = deeplinkURL
         if let deeplink = jsonContent.pt_dl1, !deeplink.isEmpty {
             actionUrl = deeplink
         }
         deeplinkURL = actionUrl
+        updateContentViewBackground()
 
         if templateType == TemplateConstants.kTemplateBasic {
-            var basicImageUrl = ""
+            var basicImageDetails: (url: String, description: String?) = ("", nil)
             if let url = jsonContent.pt_big_img, !url.isEmpty {
-                basicImageUrl = url
+                basicImageDetails = (url: url, description: jsonContent.pt_big_img_alt_text)
             }else if isFromProductDisplay{
                 //case for handling image data for product display
                 if let url = jsonContent.pt_img1, !url.isEmpty {
-                    basicImageUrl = url
+                    basicImageDetails = (url: url, description: jsonContent.pt_img1_alt_text)
                 }else if let url = jsonContent.pt_img2, !url.isEmpty {
-                    basicImageUrl = url
+                    basicImageDetails = (url: url, description: jsonContent.pt_img2_alt_text)
                 }else if let url = jsonContent.pt_img3, !url.isEmpty {
-                    basicImageUrl = url
+                    basicImageDetails = (url: url, description: jsonContent.pt_img3_alt_text)
                 }
             }
 
-            CTUtiltiy.checkImageUrlValid(imageUrl: basicImageUrl) { [weak self] (imageData) in
+            CTUtiltiy.checkImageUrlValid(imageUrl: basicImageDetails.url) { [weak self] (imageData) in
                 DispatchQueue.main.async {
                     if imageData != nil {
-                        let itemComponents = CaptionedImageViewComponents(caption: self!.templateCaption, subcaption: self!.templateSubcaption, imageUrl: basicImageUrl, actionUrl: actionUrl, bgColor: self!.bgColor, captionColor: self!.captionColor, subcaptionColor: self!.subcaptionColor)
+                        let itemComponents = CaptionedImageViewComponents(caption: self!.templateCaption, subcaption: self!.templateSubcaption, imageUrl: basicImageDetails.url, actionUrl: actionUrl, bgColor: self!.bgColor, captionColor: self!.captionColor, subcaptionColor: self!.subcaptionColor, bgColorDark: self!.bgColorDark, captionColorDark: self!.captionColorDark, subcaptionColorDark: self!.subcaptionColorDark, imageDescription: basicImageDetails.description ?? CTAccessibility.kDefaultImageDescription)
                         let itemView = CTCaptionedImageView(components: itemComponents)
                         self?.itemViews.append(itemView)
                     }
@@ -94,26 +122,28 @@ import UserNotificationsUI
             }
         } else if templateType == TemplateConstants.kTemplateAutoCarousel || templateType == TemplateConstants.kTemplateManualCarousel {
             // Add non empty image urls.
-            var imageUrls = [String]()
+            var imageUrls = [(url: String, description: String?)]()
             if let url = jsonContent.pt_img1, !url.isEmpty {
-                imageUrls.append(url)
+                imageUrls.append((url: url, description: jsonContent.pt_img1_alt_text))
             }
             if let url = jsonContent.pt_img2, !url.isEmpty {
-                imageUrls.append(url)
+                imageUrls.append((url: url, description: jsonContent.pt_img2_alt_text))
             }
             if let url = jsonContent.pt_img3, !url.isEmpty {
-                imageUrls.append(url)
+                imageUrls.append((url: url, description: jsonContent.pt_img3_alt_text))
             }
             
             let dispatchGroup = DispatchGroup()
-            for (_,url) in imageUrls.enumerated() {
+            var imageIndex = 1
+            for (_,imageDetails) in imageUrls.enumerated() {
                 dispatchGroup.enter()
-                CTUtiltiy.checkImageUrlValid(imageUrl: url) { [weak self] (imageData) in
+                CTUtiltiy.checkImageUrlValid(imageUrl: imageDetails.url) { [weak self] (imageData) in
                     DispatchQueue.main.async {
                         if imageData != nil {
-                            let itemComponents = CaptionedImageViewComponents(caption: self!.templateCaption, subcaption: self!.templateSubcaption, imageUrl: url, actionUrl: actionUrl, bgColor: self!.bgColor, captionColor: self!.captionColor, subcaptionColor: self!.subcaptionColor)
+                            let itemComponents = CaptionedImageViewComponents(caption: self!.templateCaption, subcaption: self!.templateSubcaption, imageUrl: imageDetails.url, actionUrl: actionUrl, bgColor: self!.bgColor, captionColor: self!.captionColor, subcaptionColor: self!.subcaptionColor, bgColorDark: self!.bgColorDark, captionColorDark: self!.captionColorDark, subcaptionColorDark: self!.subcaptionColorDark, imageDescription: imageDetails.description ?? "\(CTAccessibility.kDefaultImageDescription) \(imageIndex)")
                             let itemView = CTCaptionedImageView(components: itemComponents)
                             self?.itemViews.append(itemView)
+                            imageIndex = imageIndex + 1
                         }
                         dispatchGroup.leave()
                     }
@@ -123,6 +153,31 @@ import UserNotificationsUI
                 self.setUpConstraints()
             }
         }
+    }
+    
+    @objc public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        // Handle trait changes, for iOS 17+ it is handled by registerForTraitChanges.
+        if #available(iOS 12.0, *) {
+            if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
+                updateContentViewBackground()
+            }
+        }
+    }
+    
+    func updateContentViewBackground() {
+        // Check if device is in dark mode (iOS 12+)
+        let isDarkMode: Bool
+        
+        if #available(iOS 12.0, *) {
+            isDarkMode = traitCollection.userInterfaceStyle == .dark
+        } else {
+            // For iOS versions before 12.0,using light mode colors since dark mode wasn't officially supported
+            isDarkMode = false
+        }
+        
+        contentView.backgroundColor = UIColor(hex: isDarkMode ? bgColorDark : bgColor)
     }
     
     func setUpConstraints() {
@@ -221,7 +276,7 @@ import UserNotificationsUI
     }
     
     func createDefaultAlertView() {
-        let itemComponents = CaptionedImageViewComponents(caption: templateCaption, subcaption: templateSubcaption, imageUrl: "", actionUrl: deeplinkURL, bgColor: bgColor, captionColor: captionColor, subcaptionColor: subcaptionColor)
+        let itemComponents = CaptionedImageViewComponents(caption: templateCaption, subcaption: templateSubcaption, imageUrl: "", actionUrl: deeplinkURL, bgColor: bgColor, captionColor: captionColor, subcaptionColor: subcaptionColor, bgColorDark: bgColorDark, captionColorDark: captionColorDark, subcaptionColorDark: subcaptionColorDark, imageDescription: "")
         let itemView = CTCaptionedImageView(components: itemComponents)
         itemViews.append(itemView)
     }

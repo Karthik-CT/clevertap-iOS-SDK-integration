@@ -13,6 +13,8 @@ class HomeScreenViewController: UIViewController, CleverTapInboxViewControllerDe
     @IBOutlet weak var txtPushEvent: UITextField!
     @IBOutlet weak var lblTitle: UILabel!
     @IBOutlet weak var lblMessage: UILabel!
+    let isLoggedInKey = "isLoggedIn"
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -41,6 +43,24 @@ class HomeScreenViewController: UIViewController, CleverTapInboxViewControllerDe
         CleverTap.sharedInstance()?.recordEvent(txtPushEvent.text!)
         self.showToast(message: "Event Pushed!", font: .systemFont(ofSize: 12.0))
     }
+    
+    @IBAction func appInboxDisp(_ sender: Any) {
+        print("App Inbox called")
+        // config the style of App Inbox Controller
+        let style = CleverTapInboxStyleConfig.init()
+        style.title = "App Inbox"
+        style.messageTags = ["tag1", "tag2"]
+        style.tabUnSelectedTextColor = UIColor.gray
+        style.tabSelectedTextColor = UIColor.white
+        style.tabSelectedBgColor = UIColor.blue
+        style.firstTabTitle = "My First Tab"
+        
+        if let inboxController = CleverTap.sharedInstance()?.newInboxViewController(with: style, andDelegate: self) {
+            let navigationController = UINavigationController.init(rootViewController: inboxController)
+            self.present(navigationController, animated: true, completion: nil)
+        }
+    }
+    
     
     @IBAction func AppInboxButton(_ sender: Any) {
         CleverTap.sharedInstance()?.recordEvent("Karthiks App Inbox Event")
@@ -76,6 +96,15 @@ class HomeScreenViewController: UIViewController, CleverTapInboxViewControllerDe
         
         CleverTap.sharedInstance()?.recordDisplayUnitClickedEvent(forID: unit.unitID!)
         CleverTap.sharedInstance()?.recordDisplayUnitViewedEvent(forID: unit.unitID!)
+    }
+    
+    @IBAction func logoutUser(_ sender: UIButton) {
+        UserDefaults.standard.set(false, forKey: isLoggedInKey)
+        UserDefaults.standard.synchronize()
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let homeVC = storyboard.instantiateViewController(withIdentifier: "ViewController") as? ViewController {
+            self.navigationController?.pushViewController(homeVC, animated: true)
+        }
     }
     
     

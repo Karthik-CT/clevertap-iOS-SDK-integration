@@ -34,6 +34,31 @@
 
 @implementation CTInAppDisplayViewController
 
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    if ([self isInAppAdvancedBuilder]) {
+        [self updateWindowFrame];
+    }
+}
+
+- (void)updateWindowFrame {
+    if (@available(iOS 13, tvOS 13.0, *)) {
+        NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
+        for (UIScene *scene in connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                
+                CGRect windowFrame = [self windowSceneFrame:windowScene];
+                self.window.frame = windowFrame;
+                break;
+            }
+        }
+    } else {
+        CGRect windowFrame = [self windowFrame];
+        self.window.frame = windowFrame;
+    }
+}
+
 - (instancetype)initWithNotification:(CTInAppNotification *)notification {
     self = [super init];
     if (self) {
@@ -128,19 +153,105 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
     NSAssert(false, @"Override in sub-class");
 }
 
+- (CGRect)windowSceneFrame:(UIWindowScene *)windowScene  API_AVAILABLE(ios(13.0), tvos(13.0)) {
+    NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
+    CGRect frame = windowScene.coordinateSpace.bounds;
+    
+    for (UIScene *scene in connectedScenes) {
+        if (scene.activationState == UISceneActivationStateForegroundActive &&
+            [scene isKindOfClass:[UIWindowScene class]]) {
+            
+            UIWindowScene *activeWindowScene = (UIWindowScene *)scene; // Avoid shadowing the parameter
+            
+            float aspectRatio = self.notification.aspectRatio;
+            float percent = self.notification.widthPercent;
+            
+            float safeAreaTop = activeWindowScene.windows.firstObject.safeAreaInsets.top;
+            float inAppWidth = activeWindowScene.coordinateSpace.bounds.size.width;
+            float inAppHeight = activeWindowScene.coordinateSpace.bounds.size.height;
+            
+            inAppWidth = ceil(inAppWidth * (percent / 100.0));
+            
+            if (aspectRatio > 0.0) {
+                inAppHeight = safeAreaTop + (inAppWidth / aspectRatio);
+                float screenHeight = activeWindowScene.coordinateSpace.bounds.size.height;
+                if (inAppHeight > screenHeight) {
+                    inAppHeight = screenHeight;
+                }
+            }
+            CGFloat originY = (activeWindowScene.coordinateSpace.bounds.size.height - inAppHeight);
+            
+            switch (self.notification.position) {
+                case CLTAP_INAPP_POSITION_TOP:
+                    frame = CGRectMake(0, 0, inAppWidth, inAppHeight);
+                    break;
+                case CLTAP_INAPP_POSITION_BOTTOM:
+                    frame = CGRectMake(0, originY, inAppWidth, inAppHeight);
+                    break;
+                default:
+                    frame = activeWindowScene.coordinateSpace.bounds;
+                    break;
+            }
+            break; // Stop looping after finding the first active foreground scene
+        }
+    }
+    return frame;
+}
+
+- (CGRect)windowFrame {
+    float aspectRatio = self.notification.aspectRatio;
+    float percent = self.notification.widthPercent;
+    
+    float inAppWidth = [UIScreen mainScreen].bounds.size.width;
+    float inAppHeight = [UIScreen mainScreen].bounds.size.height;
+    
+    inAppWidth = ceil(inAppWidth * (percent / 100.0));
+    
+    if (aspectRatio > 0.0) {
+        inAppHeight = inAppWidth / aspectRatio;
+    }
+    float originY = ([UIScreen mainScreen].bounds.size.height - inAppHeight);
+    
+    CGRect frame;
+    switch (self.notification.position) {
+        case CLTAP_INAPP_POSITION_TOP:
+            frame = CGRectMake(0, 0, inAppWidth, inAppHeight);
+            break;
+        case CLTAP_INAPP_POSITION_BOTTOM:
+            frame = CGRectMake(0, originY, inAppWidth, inAppHeight);
+            break;
+        default:
+            frame = CGRectMake(0, 0, inAppWidth, inAppHeight);
+            break;
+    }
+    return frame;
+}
+
 - (void)initializeWindowOfClass:(Class)windowClass animated:(BOOL)animated {
     if (@available(iOS 13, tvOS 13.0, *)) {
         NSSet *connectedScenes = [CTUIUtils getSharedApplication].connectedScenes;
         for (UIScene *scene in connectedScenes) {
             if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]]) {
                 UIWindowScene *windowScene = (UIWindowScene *)scene;
-                self.window = [[windowClass alloc] initWithFrame:
-                               windowScene.coordinateSpace.bounds];
-                self.window.windowScene = windowScene;
+                
+                if ([self isInAppAdvancedBuilder]) {
+                    CGRect windowFrame = [self windowSceneFrame:windowScene];
+                    self.window = [[windowClass alloc] initWithFrame:windowFrame];
+                    self.window.windowScene = windowScene;
+                } else {
+                    self.window = [[windowClass alloc] initWithFrame:
+                                                    windowScene.coordinateSpace.bounds];
+                    self.window.windowScene = windowScene;
+                }
             }
         }
     } else {
-        self.window = [[windowClass alloc] initWithFrame:CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
+        if ([self isInAppAdvancedBuilder]) {
+            CGRect windowFrame = [self windowFrame];
+            self.window = [[windowClass alloc] initWithFrame: windowFrame];
+        } else {
+            self.window = [[windowClass alloc] initWithFrame:CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height)];
+        }
     }
     
     if (!self.window) {
@@ -196,17 +307,30 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
 }
 
 - (void)hideFromWindow:(BOOL)animated {
+    [self hideFromWindow:animated withCompletion:nil];
+}
+
+- (void)hideFromWindow:(BOOL)animated withCompletion:(void (^)(void))completion {
+    __weak typeof(self) weakSelf = self;
     void (^completionBlock)(void) = ^ {
-        [self.window removeFromSuperview];
-        self.window = nil;
-        if (self.delegate && [self.delegate respondsToSelector:@selector(notificationDidDismiss:fromViewController:)]) {
-            [self.delegate notificationDidDismiss:self.notification fromViewController:self];
+        if (!weakSelf) {
+            return;
+        }
+        if (weakSelf.window) {
+            [weakSelf.window removeFromSuperview];
+            weakSelf.window = nil;
+        }
+        if (weakSelf.delegate && [weakSelf.delegate respondsToSelector:@selector(notificationDidDismiss:fromViewController:)]) {
+            [weakSelf.delegate notificationDidDismiss:weakSelf.notification fromViewController:weakSelf];
+        }
+        if (completion) {
+            completion();
         }
     };
     
     if (animated) {
         [UIView animateWithDuration:0.25 animations:^{
-            self.window.alpha = 0;
+            weakSelf.window.alpha = 0;
         } completion:^(BOOL finished) {
             completionBlock();
         }];
@@ -215,7 +339,6 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
         completionBlock();
     }
 }
-
 
 #pragma mark - CTInAppPassThroughViewDelegate
 
@@ -243,6 +366,8 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
     return buttonView;
 }
 
+#pragma mark - Util functions
+
 - (BOOL)deviceOrientationIsLandscape {
 #if (TARGET_OS_TV)
     return nil;
@@ -251,6 +376,9 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
 #endif
 }
 
+- (BOOL)isInAppAdvancedBuilder {
+    return self.notification.aspectRatio > 0;
+}
 
 #pragma mark - Actions
 
@@ -270,8 +398,12 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
     if (campaignId == nil) {
         campaignId = @"";
     }
+    if (buttonText == nil) {
+        buttonText = @"";
+    }
     
     if (self.notification.isLocalInApp) {
+        self.notification.actionExtras = @{CLTAP_NOTIFICATION_ID_TAG: campaignId, CLTAP_PROP_WZRK_CTA: buttonText};
         if  (index == 0) {
             if (self.delegate && [self.delegate respondsToSelector:@selector(handleInAppPushPrimer:fromViewController:withFallbackToSettings:)]) {
                 [self.delegate handleInAppPushPrimer:self.notification
@@ -303,6 +435,23 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
 
 - (void)triggerInAppAction:(CTNotificationAction *)action callToAction:(NSString *)callToAction buttonId:(NSString *)buttonId {
     NSMutableDictionary *extras = [NSMutableDictionary new];
+    
+    if (action.type == CTInAppActionTypeOpenURL) {
+        NSString *urlString = [action.actionURL absoluteString];
+        NSMutableDictionary *mutableParams = [CTInAppUtils getParametersFromURL:urlString];
+        
+        if (mutableParams[@"params"]) {
+            extras = [mutableParams[@"params"] mutableCopy];
+            
+            // Use the url from the deeplink to update the action if such is set
+            if (mutableParams[@"deeplink"]) {
+                action = [[CTNotificationAction alloc] initWithOpenURL:mutableParams[@"deeplink"]];
+            }
+        }
+    }
+    
+    // callToAction, buttonId and notification id take precedence over
+    // the URL parameters if those have been set in the URL
     if (callToAction) {
         extras[CLTAP_PROP_WZRK_CTA] = callToAction;
     }
@@ -318,7 +467,8 @@ API_AVAILABLE(ios(13.0), tvos(13.0)) {
         [self.delegate respondsToSelector:@selector(handleNotificationAction:forNotification:withExtras:)]) {
         [self.delegate handleNotificationAction:action forNotification:self.notification withExtras:extras];
     }
-    [self hide:YES];
+    BOOL shouldAnimate = ![callToAction isEqualToString: CLTAP_CTA_SWIPE_DISMISS];
+    [self hide: shouldAnimate];
 }
 
 - (void)handleImageTapGesture {

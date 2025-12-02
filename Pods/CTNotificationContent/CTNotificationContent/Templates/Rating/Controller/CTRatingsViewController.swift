@@ -14,6 +14,16 @@ import UIKit
     @objc public var templateCaption: String = ""
     @objc public var templateSubcaption: String = ""
     @objc public var deeplinkURL: String = ""
+    
+    var bgColor: String = ConstantKeys.kDefaultColor
+    var captionColor: String = ConstantKeys.kHexBlackColor
+    var subcaptionColor: String = ConstantKeys.kHexLightGrayColor
+    
+    // Dark mode colors
+    var bgColorDark: String = ConstantKeys.kDefaultColorDark
+    var captionColorDark: String = ConstantKeys.kHexWhiteColor
+    var subcaptionColorDark: String = ConstantKeys.kHexDarkGrayColor
+    
     var jsonContent: RatingProperties? = nil
     var templateBigImage:String = ""
     var templateDl1:String = ""
@@ -41,6 +51,7 @@ import UIKit
         let bigImageView = UIImageView()
         bigImageView.contentMode = .scaleAspectFill
         bigImageView.layer.masksToBounds = true
+        bigImageView.isAccessibilityElement = true
         bigImageView.translatesAutoresizingMaskIntoConstraints = false
         return bigImageView
     }()
@@ -62,6 +73,9 @@ import UIKit
         let oneStarImageView = UIImageView()
         oneStarImageView.contentMode = .scaleAspectFit
         oneStarImageView.layer.masksToBounds = true
+        oneStarImageView.isAccessibilityElement = true
+        oneStarImageView.accessibilityLabel = "Rating 1 Star"
+        oneStarImageView.accessibilityTraits = .button
         oneStarImageView.translatesAutoresizingMaskIntoConstraints = false
         oneStarImageView.tag = 1
         return oneStarImageView
@@ -71,6 +85,9 @@ import UIKit
         let twoStarImageView = UIImageView()
         twoStarImageView.contentMode = .scaleAspectFit
         twoStarImageView.layer.masksToBounds = true
+        twoStarImageView.isAccessibilityElement = true
+        twoStarImageView.accessibilityLabel = "Rating 2 Star"
+        twoStarImageView.accessibilityTraits = .button
         twoStarImageView.translatesAutoresizingMaskIntoConstraints = false
         twoStarImageView.tag = 2
         return twoStarImageView
@@ -80,6 +97,9 @@ import UIKit
         let threeStarImageView = UIImageView()
         threeStarImageView.contentMode = .scaleAspectFit
         threeStarImageView.layer.masksToBounds = true
+        threeStarImageView.isAccessibilityElement = true
+        threeStarImageView.accessibilityLabel = "Rating 3 Star"
+        threeStarImageView.accessibilityTraits = .button
         threeStarImageView.translatesAutoresizingMaskIntoConstraints = false
         threeStarImageView.tag = 3
         return threeStarImageView
@@ -89,6 +109,9 @@ import UIKit
         let fourStarImageView = UIImageView()
         fourStarImageView.contentMode = .scaleAspectFit
         fourStarImageView.layer.masksToBounds = true
+        fourStarImageView.isAccessibilityElement = true
+        fourStarImageView.accessibilityLabel = "Rating 4 Star"
+        fourStarImageView.accessibilityTraits = .button
         fourStarImageView.translatesAutoresizingMaskIntoConstraints = false
         fourStarImageView.tag = 4
         return fourStarImageView
@@ -98,6 +121,9 @@ import UIKit
         let fiveStarImageView = UIImageView()
         fiveStarImageView.contentMode = .scaleAspectFit
         fiveStarImageView.layer.masksToBounds = true
+        fiveStarImageView.isAccessibilityElement = true
+        fiveStarImageView.accessibilityLabel = "Rating 5 Star"
+        fiveStarImageView.accessibilityTraits = .button
         fiveStarImageView.translatesAutoresizingMaskIntoConstraints = false
         fiveStarImageView.tag = 5
         return fiveStarImageView
@@ -114,7 +140,15 @@ import UIKit
         self.addGestureReconizerToImageView()
         createView()
         setupConstraints()
-        // Do any additional setup after loading the view.
+        
+        // Register for trait changes on iOS 17+
+        if #available(iOS 17.0, *) {
+            registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (self: Self, previousTraitCollection: UITraitCollection) in
+                if self.traitCollection.userInterfaceStyle != previousTraitCollection.userInterfaceStyle {
+                    self.updateInterfaceColors()
+                }
+            }
+        }
     }
     
     func checkForiOS12(){
@@ -306,14 +340,15 @@ import UIKit
             templateBigImage = bigImage
         }
         
-        self.titleLabel.text = templateCaption
-        self.subTitleLabel.text = templateSubcaption
+        self.titleLabel.setHTMLText(templateCaption)
+        self.subTitleLabel.setHTMLText(templateSubcaption)
     
         if let bigImg = jsonContent.pt_big_img{
             CTUtiltiy.checkImageUrlValid(imageUrl: bigImg) { [weak self] (imageData) in
                 DispatchQueue.main.async {
                     if imageData != nil {
                         self?.bigImageView.image = imageData
+                        self?.bigImageView.accessibilityLabel = jsonContent.pt_big_img_alt_text ?? CTAccessibility.kDefaultImageDescription
                         self?.updateUI()
                     }else{
                         //handle when image url is invalid
@@ -327,17 +362,29 @@ import UIKit
             templateBigImage = ""
             self.updateUI()
         }
-                
-        if let bgColor = jsonContent.pt_bg,!bgColor.isEmpty{
-            view.backgroundColor = UIColor(hex: bgColor)
+        
+        if let bg = jsonContent.pt_bg,!bgColor.isEmpty{
+            bgColor = bg
         }
-        if let titleColor = jsonContent.pt_title_clr {
-            self.titleLabel.textColor = UIColor(hex: titleColor)
+        if let titleColor = jsonContent.pt_title_clr, !titleColor.isEmpty {
+            captionColor = titleColor
         }
-        if let msgColor = jsonContent.pt_msg_clr {
-            self.subTitleLabel.textColor = UIColor(hex: msgColor)
+        if let msgColor = jsonContent.pt_msg_clr, !msgColor.isEmpty {
+            subcaptionColor = msgColor
+        }
+
+        // Handle dark mode colors
+        if let bgDark = jsonContent.pt_bg_dark, !bgDark.isEmpty {
+            bgColorDark = bgDark
+        }
+        if let titleColorDark = jsonContent.pt_title_clr_dark, !titleColorDark.isEmpty {
+            captionColorDark = titleColorDark
+        }
+        if let msgColorDark = jsonContent.pt_msg_clr_dark, !msgColorDark.isEmpty {
+            subcaptionColorDark = msgColorDark
         }
         
+        updateInterfaceColors()
     }
     
     func updateUI(){
@@ -351,6 +398,33 @@ import UIKit
         }else{
             viewWithImageandRating()
         }
+    }
+    
+    @objc public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        // Handle trait changes, for iOS 17+ it is handled by registerForTraitChanges.
+        if #available(iOS 12.0, *) {
+            if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
+                updateInterfaceColors()
+            }
+        }
+    }
+    
+    func updateInterfaceColors() {
+        // Check if device is in dark mode (iOS 12+)
+        let isDarkMode: Bool
+        
+        if #available(iOS 12.0, *) {
+            isDarkMode = traitCollection.userInterfaceStyle == .dark
+        } else {
+            // For iOS versions before 12.0,using light mode colors since dark mode wasn't officially supported
+            isDarkMode = false
+        }
+        
+        view.backgroundColor = UIColor(hex: isDarkMode ? bgColorDark : bgColor)
+        self.titleLabel.textColor = UIColor(hex: isDarkMode ? captionColorDark : captionColor)
+        self.subTitleLabel.textColor = UIColor(hex: isDarkMode ? subcaptionColorDark : subcaptionColor)
     }
     
     func setupConstraints() {

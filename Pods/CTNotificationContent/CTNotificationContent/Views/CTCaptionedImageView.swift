@@ -8,6 +8,10 @@ struct CaptionedImageViewComponents {
     var bgColor: String = ""
     var captionColor: String = ""
     var subcaptionColor: String = ""
+    var bgColorDark: String = ""
+    var captionColorDark: String = ""
+    var subcaptionColorDark: String = ""
+    var imageDescription: String = ""
 }
 
 class CTCaptionedImageView : UIView {
@@ -18,6 +22,7 @@ class CTCaptionedImageView : UIView {
         imageView.contentMode = .scaleAspectFit
         imageView.layer.borderColor = UIColor.lightGray.cgColor
         imageView.layer.masksToBounds = true
+        imageView.isAccessibilityElement = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -59,21 +64,45 @@ class CTCaptionedImageView : UIView {
         addSubview(captionLabel)
         addSubview(subcaptionLabel)
 
-        backgroundColor = UIColor(hex: components.bgColor)
-        imageView.backgroundColor = UIColor(hex: components.bgColor)
-
         CTUtiltiy.checkImageUrlValid(imageUrl: components.imageUrl) { [weak self] (imageData) in
             DispatchQueue.main.async {
                 if imageData != nil {
                     self?.imageView.image = imageData
+                    self?.imageView.accessibilityLabel = self?.components.imageDescription
                     self?.activateImageViewContraints()
                 }
             }
         }
-        captionLabel.text = components.caption
-        subcaptionLabel.text = components.subcaption
-        captionLabel.textColor = UIColor(hex: components.captionColor)
-        subcaptionLabel.textColor = UIColor(hex: components.subcaptionColor)
+        captionLabel.setHTMLText(components.caption)
+        subcaptionLabel.setHTMLText(components.subcaption)
+        updateInterfaceColors()
+    }
+    
+    @objc public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+            super.traitCollectionDidChange(previousTraitCollection)
+            
+            // Check if iOS 12+ API is available before using it
+            if #available(iOS 12.0, *) {
+                if traitCollection.userInterfaceStyle != previousTraitCollection?.userInterfaceStyle {
+                    updateInterfaceColors()
+                }
+            }
+    }
+    
+    func updateInterfaceColors() {
+        // Check if device is in dark mode (iOS 12+)
+        let isDarkMode: Bool
+        
+        if #available(iOS 12.0, *) {
+            isDarkMode = traitCollection.userInterfaceStyle == .dark
+        } else {
+            // For iOS versions before 12.0,using light mode colors since dark mode wasn't officially supported
+            isDarkMode = false
+        }
+        
+        imageView.backgroundColor = UIColor(hex: isDarkMode ? components.bgColorDark : components.bgColor)
+        captionLabel.textColor = UIColor(hex: isDarkMode ? components.captionColorDark : components.captionColor)
+        subcaptionLabel.textColor = UIColor(hex: isDarkMode ? components.subcaptionColorDark : components.subcaptionColor)
     }
     
     func setupConstraints() {

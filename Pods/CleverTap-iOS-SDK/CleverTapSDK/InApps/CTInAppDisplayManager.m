@@ -156,6 +156,9 @@ static NSMutableArray<NSArray *> *pendingNotifications;
 - (void)_addInAppNotificationsToQueue:(NSArray *)inappNotifs {
     @try {
         NSArray *filteredInAppNotifs = [self filterNonRegisteredTemplates:inappNotifs];
+        if (pushPrimerManager.pushPermissionStatus == CTPushEnabled) {
+            filteredInAppNotifs = [self filterRFPInApps:filteredInAppNotifs];
+        }
         [self.inAppStore enqueueInApps:filteredInAppNotifs];
         
         [CTUtils runSyncMainQueue:^{
@@ -304,7 +307,7 @@ static NSMutableArray<NSArray *> *pendingNotifications;
             return;
         }
 
-        NSTimeInterval now = (int)[[NSDate date] timeIntervalSince1970];
+        NSTimeInterval now = [[NSDate date] timeIntervalSince1970];
         if (now > notification.timeToLive) {
             CleverTapLogInternal(self.config.logLevel, @"%@: InApp has elapsed its time to live, not showing the InApp: %@ wzrk_ttl: %lu", self, jsonObj, (unsigned long)notification.timeToLive);
             return;
@@ -312,10 +315,41 @@ static NSMutableArray<NSArray *> *pendingNotifications;
         
         [self prepareNotification:notification withCompletion:^{
             [CTUtils runSyncMainQueue:^{
+                [self checkOrientationSupport:notification];
+                if (notification.error) {
+                    CleverTapLogInternal(self.config.logLevel, @"%@: Device orientation not supported for inapp notification: %@, error: %@ ", self, notification.jsonDescription, notification.error);
+                    return;
+                }
+                
                 [self notificationReady:notification];
             }];
         }];
     }];
+}
+
+- (void)checkOrientationSupport:(CTInAppNotification *)notification {
+    if (notification.inAppType == CTInAppTypeCustom) {
+        // The in-app orientation support depends on the custom in-app presenter.
+        return;
+    }
+    
+    if (notification.hasPortrait && !notification.hasLandscape && [self deviceOrientationIsLandscape]) {
+        notification.error = [NSString stringWithFormat:@"The InApp Notification supports %@ only, the app orientation is %@ dismissing the in-app.", @"portrait", @"landscape"];
+        return;
+    }
+    
+    if (notification.hasLandscape && !notification.hasPortrait && ![self deviceOrientationIsLandscape]) {
+        notification.error = [NSString stringWithFormat:@"The InApp Notification supports %@ only, the app orientation is %@ dismissing the in-app.", @"landscape", @"portrait"];
+        return;
+    }
+}
+
+- (BOOL)deviceOrientationIsLandscape {
+#if (TARGET_OS_TV)
+    return nil;
+#else
+    return [CTUIUtils isDeviceOrientationLandscape];
+#endif
 }
 
 - (void)prepareNotification:(CTInAppNotification *)notification withCompletion:(void (^)(void))completionHandler {
@@ -422,6 +456,27 @@ static NSMutableArray<NSArray *> *pendingNotifications;
         return;
     }
     
+    if (notification.isRequestForPushPermission) {
+        // If push permission is already enabled, do not show inapp.
+        if (pushPrimerManager.pushPermissionStatus == CTPushEnabled) {
+            CleverTapLogDebug(self.config.logLevel, @"%@: Not showing push permission request, permission is already granted.", self);
+            return;
+        }
+
+        // If push permission status is not known yet, check for status and on callback show the inapp is push is not enabled.
+        if (pushPrimerManager.pushPermissionStatus == CTPushNotKnown) {
+            [pushPrimerManager checkAndUpdatePushPermissionStatusWithCompletion:^(CTPushPermissionStatus status) {
+                self->pushPrimerManager.pushPermissionStatus = status;
+                if (status == CTPushNotEnabled) {
+                    [self displayNotification:notification];
+                } else {
+                    CleverTapLogDebug(self.config.logLevel, @"%@: Not showing push permission request, status: %ld", self, (long)status);
+                }
+            }];
+            return;
+        }
+    }
+    
     // if we are currently displaying a notification, cache this notification for later display
     if (currentlyDisplayingNotification) {
         if (self.config.accountId && notification) {
@@ -484,11 +539,11 @@ static NSMutableArray<NSArray *> *pendingNotifications;
             controller = [[CTCoverImageViewController alloc] initWithNotification:notification];
             break;
         case CTInAppTypeCustom:
-            if ([self.templatesManager presentNotification:notification 
+            currentlyDisplayingNotification = notification;
+            if (![self.templatesManager presentNotification:notification
                                               withDelegate:self
                                          andFileDownloader:self.fileDownloader]) {
-                currentlyDisplayingNotification = notification;
-            } else {
+                currentlyDisplayingNotification = nil;
                 errorString = [NSString stringWithFormat:@"Cannot present custom notification with template name: %@.",
                                notification.customTemplateInAppData.templateName];
             }
@@ -512,6 +567,12 @@ static NSMutableArray<NSArray *> *pendingNotifications;
         CleverTapLogDebug(self.config.logLevel, @"%@: %@", self, errorString);
     }
 #endif
+}
+
+- (void)notifyNotificationDidShow:(CTInAppNotification *)notification {
+    if (self.inAppNotificationDelegate && [self.inAppNotificationDelegate respondsToSelector:@selector(inAppNotificationDidShow:)]) {
+        [self.inAppNotificationDelegate inAppNotificationDidShow:notification.jsonDescription];
+    }
 }
 
 - (void)notifyNotificationDismissed:(CTInAppNotification *)notification {
@@ -589,6 +650,7 @@ static NSMutableArray<NSArray *> *pendingNotifications;
     CleverTapLogInternal(self.config.logLevel, @"%@: InApp did show: %@", self, notification.campaignId);
     [self.instance recordInAppNotificationStateEvent:NO forNotification:notification andQueryParameters:nil];
     [self.inAppFCManager didShow:notification];
+    [self notifyNotificationDidShow:notification];
 }
 
 - (void)notifyNotificationButtonTappedWithCustomExtras:(NSDictionary *)customExtras {
@@ -711,8 +773,7 @@ static NSMutableArray<NSArray *> *pendingNotifications;
            fromViewController:(CTInAppDisplayViewController *)controller
        withFallbackToSettings:(BOOL)isFallbackToSettings {
     CleverTapLogDebug(self.config.logLevel, @"%@: InApp Push Primer Accepted:", self);
-    [pushPrimerManager promptForOSPushNotificationWithFallbackToSettings:isFallbackToSettings
-                                       andSkipSettingsAlert:notification.skipSettingsAlert];
+    [pushPrimerManager promptForOSPushNotificationWithFallbackToSettings:isFallbackToSettings withCompletionBlock:nil];
     
 }
 
@@ -738,45 +799,29 @@ static NSMutableArray<NSArray *> *pendingNotifications;
         NSMutableDictionary *inapp = [[NSJSONSerialization JSONObjectWithData:[jsonString dataUsingEncoding:NSUTF8StringEncoding]
                                                                       options:0
                                                                         error:nil] mutableCopy];
-        
-        // Handle Image Interstitial InApp Test
-        if (inapp && [notification[CLTAP_INAPP_PREVIEW_TYPE] isEqualToString:CLTAP_INAPP_IMAGE_INTERSTITIAL_TYPE]) {
-            NSString *config = [inapp valueForKeyPath:CLTAP_INAPP_IMAGE_INTERSTITIAL_CONFIG];
-            NSString *htmlContent = [self wrapImageInterstitialContent:[CTUtils jsonObjectToString:config]];
-            if (config && htmlContent) {
-                inapp[@"type"] = CLTAP_INAPP_HTML_TYPE;
-                id data = inapp[CLTAP_INAPP_DATA_TAG];
-                if (data && [data isKindOfClass:[NSDictionary class]]) {
-                    data = [data mutableCopy];
-                    // Update the html
-                    data[CLTAP_INAPP_HTML] = htmlContent;
-                } else {
-                    // If data key is not present or it is not a dictionary,
-                    // set it and overwrite it
-                    inapp[CLTAP_INAPP_DATA_TAG] = @{
-                        CLTAP_INAPP_HTML: htmlContent
-                    };
-                }
-            } else {
-                CleverTapLogDebug(self.config.logLevel, @"%@: Failed to parse the image-interstitial notification", self);
-                return YES;
-            }
-        }
-        
-        if (inapp) {
-            float delay = self.isAppActiveForeground ? 0.5 : 2.0;
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t) (delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                @try {
-                    [self prepareNotificationForDisplay:inapp];
-                } @catch (NSException *e) {
-                    CleverTapLogDebug(self.config.logLevel, @"%@: Failed to display the inapp notifcation from payload: %@", self, e.debugDescription);
-                }
-            });
-        } else {
+        if (!inapp) {
             CleverTapLogDebug(self.config.logLevel, @"%@: Failed to parse the inapp notification as JSON", self);
             return YES;
         }
         
+        // Handle Image Interstitial and Advanced Builder InApp Test (Preview)
+        NSString *inAppPreviewType = notification[CLTAP_INAPP_PREVIEW_TYPE];
+        if ([inAppPreviewType isEqualToString:CLTAP_INAPP_IMAGE_INTERSTITIAL_TYPE] || [inAppPreviewType isEqualToString:CLTAP_INAPP_ADVANCED_BUILDER_TYPE]) {
+            NSMutableDictionary *htmlInapp = [self handleHTMLInAppPreview:inapp];
+            if (!htmlInapp) {
+                return YES; // Failed to handle HTML inapp
+            }
+            inapp = htmlInapp;
+        }
+        
+        float delay = self.isAppActiveForeground ? 0.5 : 2.0;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t) (delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            @try {
+                [self prepareNotificationForDisplay:inapp];
+            } @catch (NSException *e) {
+                CleverTapLogDebug(self.config.logLevel, @"%@: Failed to display the inapp notifcation from payload: %@", self, e.debugDescription);
+            }
+        });
     } @catch (NSException *e) {
         CleverTapLogDebug(self.config.logLevel, @"%@: Failed to display the inapp notifcation from payload: %@", self, e.debugDescription);
         return YES;
@@ -800,10 +845,55 @@ static NSMutableArray<NSArray *> *pendingNotifications;
     if (html && content) {
         NSArray *parts = [html componentsSeparatedByString:CLTAP_INAPP_HTML_SPLIT];
         if ([parts count] == 2) {
-            return [NSString stringWithFormat:@"%@'%@'%@", parts[0], content, parts[1]];
+            return [NSString stringWithFormat:@"%@%@%@", parts[0], content, parts[1]];
         }
     }
     return nil;
+}
+
+- (NSMutableDictionary *)handleHTMLInAppPreview:(NSMutableDictionary *)inapp {
+    NSMutableDictionary *htmlInapp = [inapp mutableCopy];
+    NSString *config = [htmlInapp valueForKeyPath:CLTAP_INAPP_IMAGE_INTERSTITIAL_CONFIG];
+    NSString *htmlContent = [self wrapImageInterstitialContent:[CTUtils jsonObjectToString:config]];
+    if (config && htmlContent) {
+        htmlInapp[@"type"] = CLTAP_INAPP_HTML_TYPE;
+        id data = htmlInapp[CLTAP_INAPP_DATA_TAG];
+        if (data && [data isKindOfClass:[NSDictionary class]]) {
+            data = [data mutableCopy];
+            // Update the html
+            data[CLTAP_INAPP_HTML] = htmlContent;
+        } else {
+            // If data key is not present or it is not a dictionary,
+            // set it and overwrite it
+            htmlInapp[CLTAP_INAPP_DATA_TAG] = @{
+                CLTAP_INAPP_HTML: htmlContent
+            };
+        }
+        return htmlInapp;
+    } else {
+        CleverTapLogDebug(self.config.logLevel, @"%@: Failed to parse the image-interstitial notification", self);
+        return nil;
+    }
+}
+
+#pragma mark - Request for Push Permission
+
+- (NSArray *)filterRFPInApps:(NSArray *)inappNotifs {
+    // Don't add inapps in queue if it is RFP inapp and push is enabled.
+    NSMutableArray *filteredInAppNotifs = [NSMutableArray new];
+    for (NSDictionary *inAppJSON in inappNotifs) {
+        if (![self isRFPInApp:inAppJSON]) {
+            [filteredInAppNotifs addObject:inAppJSON];
+        } else {
+            CleverTapLogDebug(self.config.logLevel, @"%@: Not adding InApp having Push Permission action button in queue as Push Notification permission is already granted: %@", self, inAppJSON[@"wzrk_id"]);
+        }
+    }
+    return filteredInAppNotifs;
+}
+
+- (BOOL)isRFPInApp:(NSDictionary *)inAppJSON {
+    BOOL isRFP = inAppJSON[@"rfp"] ? [inAppJSON[@"rfp"] boolValue] : NO;
+    return isRFP;
 }
 
 @end
