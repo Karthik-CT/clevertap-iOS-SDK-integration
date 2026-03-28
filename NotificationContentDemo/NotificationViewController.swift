@@ -8,7 +8,7 @@
 import CleverTapSDK
 import CTNotificationContent
 
-class NotificationViewController: CTNotificationViewController {
+class NotificationViewController: CTNotificationViewController  {
 
     @IBOutlet var label: UILabel?
 

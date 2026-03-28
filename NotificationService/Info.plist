@@ -14,8 +14,6 @@
 		<string>com.apple.usernotifications.service</string>
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).NotificationService</string>
-		<key>New item</key>
-		<string></string>
 	</dict>
 </dict>
 </plist>

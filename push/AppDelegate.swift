@@ -22,18 +22,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
         
-        Logger(subsystem: "app", category: "debug")
-            .log("User ID: \(userId, privacy: .public)")
-        
-        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
-        print("PrintVar: \(printVar)")
-//        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
-//        print("PrintVar: \(dateObject)")
-        var profile: Dictionary<String, Any> = [
-            "DOB": printVar
-        ]
-        CleverTap.sharedInstance()?.onUserLogin(profile)
-        
+        //        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
+        //        print("PrintVar: \(printVar)")
+        //        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
+        //        print("PrintVar: \(dateObject)")
+        //        var profile: Dictionary<String, Any> = [
+        //            "DOB": printVar
+        //        ]
+        //        CleverTap.sharedInstance()?.onUserLogin(profile)
+        //
         printUserDefaults()
         //        clearIdentityErrorIssue()
         
@@ -205,7 +202,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: (UNNotificationPresentationOptions) -> Void) {
         
         //CleverTap.sharedInstance()?.handleNotification(withData: notification.request.content.userInfo, openDeepLinksInForeground: true)
-        completionHandler([.badge, .sound, .alert])
+        //        if (notification.request.content.)
+        
+        if notification.request.content.userInfo["rendering"] != nil {
+            print("This is willPresent payload: \(notification.request.content)")
+            print("This is willPresent payload: \(notification.request.content.title)")
+            print("This is willPresent payload: \(notification.request.content.userInfo["rendering"] ?? "nil")")
+        } else {
+            completionHandler([.badge, .sound, .alert])
+        }
     }
     
     //Push Notification Callback
@@ -217,7 +222,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         NSLog("%@: did receive remote notification completionhandler: %@", self.description, userInfo)
-        completionHandler(UIBackgroundFetchResult.noData)
+        let aps = userInfo["aps"] as? [String: Any]
+        let isSilentPush = aps?["content-available"] as? Int == 1
+        
+        if isSilentPush {
+            print("Received silent push notification")
+            print("All details: \(userInfo)")
+            completionHandler(.newData)
+            return
+        }
     }
     
     // MARK: UISceneSession Lifecycle

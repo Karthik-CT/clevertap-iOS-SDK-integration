@@ -46,6 +46,21 @@ typedef NS_ENUM(NSInteger, CleverTapEventType) {
 - (void)recordInAppNotificationStateEvent:(BOOL)clicked
                           forNotification:(CTInAppNotification * _Nonnull)notification andQueryParameters:(NSDictionary * _Nullable)params;
 
+- (void)fetchInAppPreviewContent:(NSString* _Nullable)url onSuccess:(void(^ _Nonnull)(NSDictionary* _Nullable inappJSON))completion;
+
 - (id <CleverTapURLDelegate> _Nullable)urlDelegate;
+
+/*!
+ @method
+ 
+ @abstract
+ Fetch in-action in-app content from backend after inactionDuration expires
+ 
+ @discussion
+ Sends wzrk_fetch event with t=6 and target ID
+ 
+ @param inAppId the campaign ID (ti) to fetch content for
+ */
+- (void)fetchInactionInApps:(NSString *_Nonnull)inAppId;
 
 @end

@@ -17,6 +17,7 @@ class NotificationService: CTNotificationServiceExtension {
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
         
+
         let defaults = UserDefaults.init(suiteName: "group.clevertapTest")
         let emailId = defaults?.value(forKey: "userEmailID") as? String
         let userId = defaults?.value(forKey: "userIdentity")
@@ -52,6 +53,7 @@ class NotificationService: CTNotificationServiceExtension {
     override func serviceExtensionTimeWillExpire() {
         // Called just before the extension will be terminated by the system.
         // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
+        print("I am from NSE")
         if let contentHandler = contentHandler, let bestAttemptContent =  bestAttemptContent {
             contentHandler(bestAttemptContent)
         }

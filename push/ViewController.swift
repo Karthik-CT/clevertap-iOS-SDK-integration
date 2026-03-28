@@ -169,8 +169,15 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         //        print("PrintDobTS: \(dob)")
 //        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
 //        print("PrintVar: \(printVar)")
-        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
-        print("PrintVar: \(dateObject)")
+//        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
+//        print("PrintVar: \(dateObject)")
+        
+        let (dobMonth, dobDate) = getMonthAndDay(from: 911154600)
+        let dob = NSDateComponents()
+        dob.day = dobDate
+        dob.month = dobMonth
+        dob.year = 2023
+        let d = NSCalendar.current.date(from: dob as DateComponents) // yyyy-mm-dd 2023-12-10T00:00:00
         
         var profile: Dictionary<String, Any> = [
             "Name": txtName.text!,
@@ -181,8 +188,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "MSG-push": true,
             "MSG-sms": true,
             "MSG-whatsapp": true,
-//            "DOB": printVar
-            "DOB": "$D_\(dateObject)"
+            "DOB": d! as AnyObject
         ]
         CleverTap.sharedInstance()?.onUserLogin(profile)
 //                CleverTap.sharedInstance()?.profilePush(profile)
@@ -207,6 +213,15 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             // Push the HomeScreenViewController
             self.navigationController?.pushViewController(homeVC, animated: true)
         }
+    }
+    
+    func getMonthAndDay(from epoch: Int64) -> (month: Int, day: Int) {
+        let isMilliseconds = epoch > 999_999_9999
+        let seconds = isMilliseconds ? epoch / 1000 : epoch
+        let date = Date(timeIntervalSince1970: TimeInterval(seconds))
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.month, .day], from: date)
+        return (components.month!, components.day!)
     }
     
     func getModifiedDOBWithYearFixed(currentDOB: Int64) -> Int64 {

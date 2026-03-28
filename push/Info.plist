@@ -18,7 +18,7 @@
 	<key>CleverTapAccountID</key>
 	<string>TEST-W8W-6WR-846Z</string>
 	<key>CleverTapDisableIDFV</key>
-	<string>1</string>
+	<string>0</string>
 	<key>CleverTapToken</key>
 	<string>TEST-206-0b0</string>
 	<key>UIApplicationSceneManifest</key>
@@ -44,16 +44,16 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
-    <key>OSLogPreferences</key>
-    <dict>
-        <key>com.deven.Clevertap-ios</key>
-        <dict>
-            <key>CTNotification</key>
-            <dict>
-                <key>Enable-Private-Data</key>
-                <true/>
-            </dict>
-        </dict>
-    </dict>
+	<key>OSLogPreferences</key>
+	<dict>
+		<key>com.deven.Clevertap-ios</key>
+		<dict>
+			<key>CTNotification</key>
+			<dict>
+				<key>Enable-Private-Data</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
