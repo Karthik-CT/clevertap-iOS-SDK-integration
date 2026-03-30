@@ -165,20 +165,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
     }
     
     @IBAction func btnClickLogin(_ sender: UIButton) {
-        //        let dob = getModifiedDOBWithYearFixed(currentDOB: -2108217070000)
-        //        print("PrintDobTS: \(dob)")
-//        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
-//        print("PrintVar: \(printVar)")
-//        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
-//        print("PrintVar: \(dateObject)")
-        
-        let (dobMonth, dobDate) = getMonthAndDay(from: 911154600)
-        let dob = NSDateComponents()
-        dob.day = dobDate
-        dob.month = dobMonth
-        dob.year = 2023
-        let d = NSCalendar.current.date(from: dob as DateComponents) // yyyy-mm-dd 2023-12-10T00:00:00
-        
+        let identity = txtIdentity.text!
         var profile: Dictionary<String, Any> = [
             "Name": txtName.text!,
             "Identity": txtIdentity.text!,
@@ -188,23 +175,26 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "MSG-push": true,
             "MSG-sms": true,
             "MSG-whatsapp": true,
-            "DOB": d! as AnyObject
         ]
-        CleverTap.sharedInstance()?.onUserLogin(profile)
-//                CleverTap.sharedInstance()?.profilePush(profile)
+        
+        CleverTapManager.shared.onUserLogin(profile, clevertapID: identity)
         
         UserDefaults.standard.set(true, forKey: isLoggedInKey)
         UserDefaults.standard.synchronize()
         
-        CleverTap.sharedInstance()?.recordEvent("LoggedIn", withProps: [
+        CleverTapManager.shared.pushEvent("LoggedIn", props: [
             "emailID": txtEmail.text!,
             "identity": txtIdentity.text!
-        ] as [String : Any])
+        ])
         
         let defaults = UserDefaults(suiteName: "group.clevertapTest")
         defaults!.set(txtEmail.text!, forKey: "userEmailID")
         defaults!.set(txtIdentity.text!, forKey: "userIdentity")
         defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
+        
+        let defaultss = UserDefaults.init(suiteName: "group.clevertapTest")
+        let userId = defaults?.value(forKey: "userIdentity")
+        print("From ViewController UserID: \(userId))")
         
         self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
         
@@ -215,48 +205,9 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         }
     }
     
-    func getMonthAndDay(from epoch: Int64) -> (month: Int, day: Int) {
-        let isMilliseconds = epoch > 999_999_9999
-        let seconds = isMilliseconds ? epoch / 1000 : epoch
-        let date = Date(timeIntervalSince1970: TimeInterval(seconds))
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.month, .day], from: date)
-        return (components.month!, components.day!)
-    }
-    
-    func getModifiedDOBWithYearFixed(currentDOB: Int64) -> Int64 {
-        // Convert epoch milliseconds to Date
-        let originalDate = Date(timeIntervalSince1970: TimeInterval(currentDOB) / 1000)
-        
-        // Extract components from the original date
-        let calendar = Calendar(identifier: .gregorian)
-        let components = calendar.dateComponents(in: TimeZone(secondsFromGMT: 0)!, from: originalDate)
-        
-        // Replace year with 2023
-        var modifiedComponents = DateComponents()
-        modifiedComponents.year = 2023
-        modifiedComponents.month = components.month
-        modifiedComponents.day = components.day
-        modifiedComponents.hour = components.hour
-        modifiedComponents.minute = components.minute
-        modifiedComponents.second = components.second
-        
-        // Convert back to Date in system time zone
-        let localTimeZone = TimeZone.current
-        let modifiedDate = calendar.date(from: modifiedComponents)!
-        
-        // Adjust to local timezone
-        let secondsFromGMT = TimeInterval(localTimeZone.secondsFromGMT(for: modifiedDate))
-        let localDate = modifiedDate.addingTimeInterval(secondsFromGMT)
-        
-        // Convert to milliseconds since 1970
-        let modifiedEpochTime = Int64(localDate.timeIntervalSince1970 * 1000)
-        
-        return modifiedEpochTime
-    }
-    
-    @IBAction func btnLoginClicked(_ sender: UIButton) {
-        let profile: Dictionary<String, Any> = [
+    @IBAction func btnClickSignup(_ sender: Any) {
+        let identity = txtIdentity.text!
+        var profile: Dictionary<String, Any> = [
             "Name": txtName.text!,
             "Identity": txtIdentity.text!,
             "Email": txtEmail.text!,
@@ -264,41 +215,24 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "MSG-email": true,
             "MSG-push": true,
             "MSG-sms": true,
-            "MSG-whatsapp": true
+            "MSG-whatsapp": true,
         ]
-        CleverTap.sharedInstance()?.onUserLogin(profile)
+        if CleverTapIdManager.shared.isFirstTimeSignup() {
+            CleverTapManager.shared.onFirstSignup(profile, clevertapID: identity)
+        } else {
+            CleverTapManager.shared.onUserLogin(profile, clevertapID: identity)
+        }
         
         let defaults = UserDefaults(suiteName: "group.clevertapTest")
         defaults!.set(txtEmail.text!, forKey: "userEmailID")
         defaults!.set(txtIdentity.text!, forKey: "userIdentity")
         defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
         
-        self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
-        
-        let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
-        let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
-        self.navigationController!.pushViewController(vc, animated: true)
-    }
-    
-    
-    @IBAction func pushProfileBtn(_ sender: UIButton) {
-        let profile: Dictionary<String, Any> = [
-            "Name": txtName.text!,
-            "Identity": txtIdentity.text!,
-            "Email": txtEmail.text!,
-            "Phone": txtMobileNumber.text!,
-            "MSG-email": true,
-            "MSG-push": true,
-            "MSG-sms": true,
-            "MSG-whatsapp": true
-        ]
-        CleverTap.sharedInstance()?.profilePush(profile)
-        
-        self.showToast(message: "Push Profile Clicked!", font: .systemFont(ofSize: 12.0))
-        
-        let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
-        let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
-        self.navigationController!.pushViewController(vc, animated: true)
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        if let homeVC = storyboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as? HomeScreenViewController {
+            // Push the HomeScreenViewController
+            self.navigationController?.pushViewController(homeVC, animated: true)
+        }
     }
     
     func showToast(message : String, font: UIFont) {

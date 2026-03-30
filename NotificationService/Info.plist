@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CleverTapUseCustomId</key>
+    <true/>
 	<key>CleverTapAccountID</key>
 	<string>TEST-W8W-6WR-846Z</string>
 	<key>CleverTapToken</key>

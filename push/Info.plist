@@ -15,6 +15,8 @@
 			</array>
 		</dict>
 	</array>
+    <key>CleverTapUseCustomId</key>
+    <true/>
 	<key>CleverTapAccountID</key>
 	<string>TEST-W8W-6WR-846Z</string>
 	<key>CleverTapDisableIDFV</key>

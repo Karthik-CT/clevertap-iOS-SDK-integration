@@ -42,13 +42,13 @@
                                 <fontDescription key="fontDescription" type="system" pointSize="14"/>
                                 <textInputTraits key="textInputTraits"/>
                             </textField>
-                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Hq9-QY-wla">
-                                <rect key="frame" x="112" y="359" width="137" height="36"/>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Xyo-qi-QMm" userLabel="Sign Up">
+                                <rect key="frame" x="225" y="359" width="137" height="36"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Button"/>
-                                <buttonConfiguration key="configuration" style="filled" title="Login"/>
+                                <buttonConfiguration key="configuration" style="filled" title="Sign Up"/>
                                 <connections>
-                                    <action selector="btnClickLogin:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ISy-hV-Y8Q"/>
+                                    <action selector="btnClickSignup:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Vag-9l-ZcV"/>
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Login" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ai4-zn-m5F">
@@ -90,6 +90,15 @@
                                 <buttonConfiguration key="configuration" style="filled" title="Go To Coachmark"/>
                                 <connections>
                                     <action selector="goToCoachmarkScreen:" destination="BYZ-38-t0r" eventType="touchUpInside" id="d0k-SF-dhV"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" fixedFrame="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Hq9-QY-wla">
+                                <rect key="frame" x="50" y="359" width="137" height="36"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <state key="normal" title="Button"/>
+                                <buttonConfiguration key="configuration" style="filled" title="Login"/>
+                                <connections>
+                                    <action selector="btnClickLogin:" destination="BYZ-38-t0r" eventType="touchUpInside" id="ISy-hV-Y8Q"/>
                                 </connections>
                             </button>
                         </subviews>

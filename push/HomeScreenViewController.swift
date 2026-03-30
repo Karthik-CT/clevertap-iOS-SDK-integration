@@ -40,7 +40,7 @@ class HomeScreenViewController: UIViewController, CleverTapInboxViewControllerDe
     }
     
     @IBAction func PushEventButton(_ sender: UIButton) {
-        CleverTap.sharedInstance()?.recordEvent(txtPushEvent.text!)
+        CleverTapManager.shared.pushEvent(txtPushEvent.text!)
         self.showToast(message: "Event Pushed!", font: .systemFont(ofSize: 12.0))
     }
     

@@ -19,38 +19,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
-        CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
-        
-        //        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
-        //        print("PrintVar: \(printVar)")
-        //        let dateObject = (getModifiedDOBWithYearFixed(currentDOB: -2108217070000)/1000)
-        //        print("PrintVar: \(dateObject)")
-        //        var profile: Dictionary<String, Any> = [
-        //            "DOB": printVar
-        //        ]
-        //        CleverTap.sharedInstance()?.onUserLogin(profile)
-        //
-        printUserDefaults()
-        //        clearIdentityErrorIssue()
+        CleverTapManager.shared.initialize()
+        if let ctId = CleverTapManager.shared.ctId {
+            CleverTap.autoIntegrate(withCleverTapID: ctId)
+        } else {
+            CleverTap.autoIntegrate()
+        }
         
         registerForPush()
-        //        CleverTap.sharedInstance()?.enableDeviceNetworkInfoReporting(true)
         
         UNUserNotificationCenter.current().delegate = self
-        
-        CleverTap.sharedInstance()?.setUrlDelegate(self)
-        CleverTap.sharedInstance()?.setPushNotificationDelegate(self)
-        //        // Create your root view controller (e.g., ViewController)
-        //        let rootViewController = ViewController() // Replace with your actual root view controller
-        //
-        //        // Wrap the root view controller in a UINavigationController
-        //        let navigationController = UINavigationController(rootViewController: rootViewController)
-        //
-        //        // Set the root view controller as the UINavigationController
-        //        window = UIWindow(frame: UIScreen.main.bounds)
-        //        window?.rootViewController = navigationController
-        //        window?.makeKeyAndVisible()
         
         return true
     }
