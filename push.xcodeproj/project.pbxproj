@@ -21,6 +21,7 @@
 		4E98D4352D6C4F1A00FC495B /* CoachmarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E98D4342D6C4F1A00FC495B /* CoachmarkView.swift */; };
 		4EB5CE1829AA823A00F8992F /* HomeScreenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EB5CE1729AA823A00F8992F /* HomeScreenViewController.swift */; };
 		4EBF34962BEB939100A11A4C /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4EBF34942BEB939100A11A4C /* Main.storyboard */; };
+		4EC0F1BA2FBB0A2E00BD3A08 /* channelsound1.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4EC0F1B92FBB0A2E00BD3A08 /* channelsound1.wav */; };
 		4EE1E9ED2DA68FB000D9D094 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4EE1E9EC2DA68FB000D9D094 /* GoogleService-Info.plist */; };
 		4EF3492D29487F23006F4170 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF3492C29487F23006F4170 /* AppDelegate.swift */; };
 		4EF3492F29487F23006F4170 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF3492E29487F23006F4170 /* SceneDelegate.swift */; };
@@ -83,6 +84,7 @@
 		4E9C456A2A611960003E8C52 /* NotificationService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NotificationService.entitlements; sourceTree = "<group>"; };
 		4EB5CE1729AA823A00F8992F /* HomeScreenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenViewController.swift; sourceTree = "<group>"; };
 		4EBF34952BEB939100A11A4C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		4EC0F1B92FBB0A2E00BD3A08 /* channelsound1.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = channelsound1.wav; sourceTree = "<group>"; };
 		4ED1B1C32D0C3AD500E0D9B3 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		4ED1B1CE2D0C3AD500E0D9B3 /* IntentsUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IntentsUI.framework; path = System/Library/Frameworks/IntentsUI.framework; sourceTree = SDKROOT; };
 		4EE1E9EC2DA68FB000D9D094 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 		4EF3492029487F23006F4170 = {
 			isa = PBXGroup;
 			children = (
+				4EC0F1B92FBB0A2E00BD3A08 /* channelsound1.wav */,
 				4EF3492B29487F23006F4170 /* push */,
 				4E04D459294C7F53008F5291 /* NotificationService */,
 				4E04D46D294C89CD008F5291 /* NotificationContentDemo */,
@@ -350,6 +353,7 @@
 				4EE1E9ED2DA68FB000D9D094 /* GoogleService-Info.plist in Resources */,
 				4EF3493629487F25006F4170 /* Assets.xcassets in Resources */,
 				4EBF34962BEB939100A11A4C /* Main.storyboard in Resources */,
+				4EC0F1BA2FBB0A2E00BD3A08 /* channelsound1.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -430,9 +434,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-push/Pods-push-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-push/Pods-push-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

@@ -19,8 +19,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+        
+        CleverTap.disablePersonalization()
         CleverTap.autoIntegrate()
         CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
+        
+        var profile: Dictionary<String, Any> = [
+            "OKWTestProp": false
+        ]
+        CleverTap.sharedInstance()?.profilePush(profile)
         
         //        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
         //        print("PrintVar: \(printVar)")
@@ -187,7 +194,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         NSLog("%@: registered for remote notifications: %@", self.description, deviceToken.debugDescription)
         //  Manual Implementation of Push
-        //        CleverTap.sharedInstance()?.setPushToken(deviceToken as Data)
+                CleverTap.sharedInstance()?.setPushToken(deviceToken)
+        
     }
     
     //Background
@@ -210,6 +218,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             print("This is willPresent payload: \(notification.request.content.userInfo["rendering"] ?? "nil")")
         } else {
             completionHandler([.badge, .sound, .alert])
+            completionHandler(UNNotificationPresentationOptions.sound)
         }
     }
     
