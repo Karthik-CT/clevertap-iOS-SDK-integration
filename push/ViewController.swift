@@ -183,7 +183,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "Name": txtName.text!,
             "Identity": txtIdentity.text!,
             "Email": txtEmail.text!,
-            "Phone": "+91"+txtMobileNumber.text!,
+            "Phone": txtMobileNumber.text?.isEmpty == false ? "+91" + txtMobileNumber.text! : "",
             "MSG-email": true,
             "MSG-push": true,
             "MSG-sms": true,
