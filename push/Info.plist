@@ -17,14 +17,15 @@
 	</array>
 	<key>CleverTapAccountID</key>
 	<string>TEST-W8W-6WR-846Z</string>
-	<key>CleverTapDisableIDFV</key>
-	<string>1</string>
 	<key>CleverTapToken</key>
 	<string>TEST-206-0b0</string>
-	<key>CleverTapIdentifiers</key>
-	<array>
-		<string>Identity</string>
-	</array>
+<!--	<key>CleverTapDisableIDFV</key>-->
+<!--	<string>0</string>-->
+<!--	<key>CleverTapIdentifiers</key>-->
+<!--	<array>-->
+<!--		<string>Identity</string>-->
+<!--		<string>Email</string>-->
+<!--	</array>-->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

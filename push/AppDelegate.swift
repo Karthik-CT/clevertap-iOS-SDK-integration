@@ -19,15 +19,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
+//        let accountId = "TEST-W8W-6WR-846Z"
+//        UserDefaults.standard.set(
+//            "Identity,Phone",
+//            forKey: "WizRocket\(accountId):CachedIdentities"
+//        )
         
-        CleverTap.disablePersonalization()
-        CleverTap.autoIntegrate()
-        CleverTap.setDebugLevel(CleverTapLogLevel.debug.rawValue)
-        
-        var profile: Dictionary<String, Any> = [
-            "OKWTestProp": false
-        ]
-        CleverTap.sharedInstance()?.profilePush(profile)
+//        let config = CleverTapInstanceConfig.init(accountId: "TEST-W8W-6WR-846Z", accountToken: "TEST-206-0b0")
+//        config.identityKeys = ["Identity", "Email"]
+//        CleverTap.instance(with: config)
+//
+//        getConfigIdentifiers
         
         //        let printVar = NSDate(timeIntervalSince1970: TimeInterval(getModifiedDOBWithYearFixed(currentDOB: -2108217070000)) / 1000)
         //        print("PrintVar: \(printVar)")

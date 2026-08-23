@@ -191,7 +191,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
             "DOB": d! as AnyObject
         ]
         CleverTap.sharedInstance()?.onUserLogin(profile)
-//                CleverTap.sharedInstance()?.profilePush(profile)
         
         UserDefaults.standard.set(true, forKey: isLoggedInKey)
         UserDefaults.standard.synchronize()
@@ -205,7 +204,7 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         defaults!.set(txtEmail.text!, forKey: "userEmailID")
         defaults!.set(txtIdentity.text!, forKey: "userIdentity")
         defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
-        
+        defaults?.synchronize()
         self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
         
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
@@ -254,32 +253,6 @@ class ViewController: UIViewController, UNUserNotificationCenterDelegate, Clever
         
         return modifiedEpochTime
     }
-    
-    @IBAction func btnLoginClicked(_ sender: UIButton) {
-        let profile: Dictionary<String, Any> = [
-            "Name": txtName.text!,
-            "Identity": txtIdentity.text!,
-            "Email": txtEmail.text!,
-            "Phone": "+91"+txtMobileNumber.text!,
-            "MSG-email": true,
-            "MSG-push": true,
-            "MSG-sms": true,
-            "MSG-whatsapp": true
-        ]
-        CleverTap.sharedInstance()?.onUserLogin(profile)
-        
-        let defaults = UserDefaults(suiteName: "group.clevertapTest")
-        defaults!.set(txtEmail.text!, forKey: "userEmailID")
-        defaults!.set(txtIdentity.text!, forKey: "userIdentity")
-        defaults!.set(txtMobileNumber.text!, forKey: "userMobileNumber")
-        
-        self.showToast(message: "Logged In!", font: .systemFont(ofSize: 12.0))
-        
-        let namestoryboard = UIStoryboard(name: "Main", bundle: nil)
-        let vc = namestoryboard.instantiateViewController(withIdentifier: "HomeScreenViewController") as! HomeScreenViewController
-        self.navigationController!.pushViewController(vc, animated: true)
-    }
-    
     
     @IBAction func pushProfileBtn(_ sender: UIButton) {
         let profile: Dictionary<String, Any> = [

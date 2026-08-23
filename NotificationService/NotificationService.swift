@@ -24,14 +24,6 @@ class NotificationService: CTNotificationServiceExtension {
         let userMobNo = defaults?.value(forKey: "userMobileNumber")
         print("From Notification Service EmailID: \(String(describing: emailId))")
         
-        let props = [
-            "emailId": emailId,
-            "userId": userId,
-            "userMobNo": userMobNo
-        ]
-        
-        CleverTap.sharedInstance()?.recordEvent("NotificationServiceEventForPushImpression", withProps: props)
-        
         if let emailId = emailId, let userId = userId, let userMobNo = userMobNo {
             let profile: Dictionary<String, Any> = [
                 "Identity": userId,
@@ -41,10 +33,6 @@ class NotificationService: CTNotificationServiceExtension {
             CleverTap.sharedInstance()?.onUserLogin(profile)
         }
         
-        //        let profile: Dictionary<String, Any> = [
-        //            "Identity": "ioskk2",
-        //            "Email": "ioskk2@test.com",]
-        //        CleverTap.sharedInstance()?.onUserLogin(profile)
         // call to record the Notification viewed
         CleverTap.sharedInstance()?.recordNotificationViewedEvent(withData:request.content.userInfo)
         super.didReceive(request, withContentHandler: contentHandler)
